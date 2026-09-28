@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Paleta Base FMAT Restaurant v2.0 */
+  --color-primary: #C2410C;
+  --color-primary-hover: #9A3412;
+  --color-primary-soft: #FFF7ED;
+  --color-accent: #F97316;
+  
+  --color-ink: #111827;
+  --color-text: #374151;
+  --color-muted: #6B7280;
+  --color-border: #E5E7EB;
+  --color-canvas: #F8FAFC;
+  --color-surface: #FFFFFF;
+
+  /* Estados */
+  --color-success: #16A34A;
+  --color-success-bg: #F0FDF4;
+  --color-warning: #D97706;
+  --color-warning-bg: #FFFBEB;
+  --color-error: #DC2626;
+  --color-error-bg: #FEF2F2;
+  --color-info: #2563EB;
+  --color-info-bg: #EFF6FF;
+
+  /* Medidas, Radios y Espaciado */
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-sm: 4px;
+  --space-unit: 4px;
+
+  /* Sombras sutiles (sin decoración excesiva) */
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-modal: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* Tipografía */
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-canvas);
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--color-canvas);
+  color: var(--color-text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-ink);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+h1 { font-size: 28px; line-height: 36px; }
+h2 { font-size: 22px; line-height: 30px; }
+h3 { font-size: 18px; line-height: 26px; font-weight: 600; }
+
+small, .text-small {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.text-caption {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-muted);
+}
+
+/* Transiciones suaves para botones e inputs */
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.15s ease-in-out;
+}
