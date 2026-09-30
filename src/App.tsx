@@ -6,12 +6,14 @@ import { DashboardHomeView } from './components/dashboard/DashboardHomeView';
 import { StaffManagementView } from './components/admin/StaffManagementView';
 import { ModulePlaceholderView } from './components/layout/ModulePlaceholderView';
 import { authStorage } from './services/authStorage';
+import { authApi } from './services/authApi';
 import type { NavModuleId } from './components/layout/Sidebar';
 import type { User, AuthSession } from './types/auth';
 
 export const App: React.FC = () => {
   const [currentSession, setCurrentSession] = useState<AuthSession | null>(() => authStorage.getSession());
   const [tempUser, setTempUser] = useState<User | null>(null);
+  const [tempToken, setTempToken] = useState<string | undefined>(undefined);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [activeModule, setActiveModule] = useState<NavModuleId>('inicio');
 
@@ -30,29 +32,36 @@ export const App: React.FC = () => {
 
   const handleRequirePasswordChange = (user: User) => {
     setTempUser(user);
+    // Guardamos el token temporal si existía en la sesión
+    setTempToken(currentSession?.accessToken);
     setIsChangePasswordOpen(true);
   };
 
-  const handlePasswordChangeSuccess = () => {
+  const handlePasswordChangeSuccess = (newToken?: string) => {
     if (tempUser) {
       const activeUser: User = {
         ...tempUser,
         mustChangePassword: false,
       };
       const newSession: AuthSession = {
-        accessToken: 'mock_jwt_activated_token',
+        accessToken: newToken || currentSession?.accessToken || 'mock_jwt_activated_token',
         user: activeUser,
       };
       setCurrentSession(newSession);
     }
     setIsChangePasswordOpen(false);
     setTempUser(null);
+    setTempToken(undefined);
     setActiveModule('inicio');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (currentSession?.accessToken) {
+      await authApi.logout(currentSession.accessToken);
+    }
     setCurrentSession(null);
     setTempUser(null);
+    setTempToken(undefined);
     setIsChangePasswordOpen(false);
     setActiveModule('inicio');
     authStorage.clearSession();
@@ -79,8 +88,13 @@ export const App: React.FC = () => {
         <ChangePasswordModal
           isOpen={isChangePasswordOpen}
           user={tempUser}
+          token={tempToken}
           onSuccess={handlePasswordChangeSuccess}
-          onCancel={() => setIsChangePasswordOpen(false)}
+          onCancel={() => {
+            setIsChangePasswordOpen(false);
+            setTempUser(null);
+            setTempToken(undefined);
+          }}
         />
       </div>
     );
@@ -95,7 +109,7 @@ export const App: React.FC = () => {
         return <DashboardHomeView currentUser={user} onNavigate={setActiveModule} />;
       case 'personal':
         if (user.userType === 'ADMIN') {
-          return <StaffManagementView currentUser={user} />;
+          return <StaffManagementView currentUser={user} onLogout={handleLogout} />;
         }
         return <DashboardHomeView currentUser={user} onNavigate={setActiveModule} />;
       case 'inventario':

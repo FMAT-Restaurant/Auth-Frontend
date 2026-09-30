@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Input, BuildingIcon, MailIcon, LockIcon, UserIcon } from '../ui';
+import { authApi } from '../../services/authApi';
 import type { AuthSession } from '../../types/auth';
 
 interface RegisterRestaurantFormProps {
@@ -25,33 +26,53 @@ export const RegisterRestaurantForm: React.FC<RegisterRestaurantFormProps> = ({ 
       return;
     }
 
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Mock de registro exitoso para Sprint 1
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // 1. Intentar llamar al backend real
+      try {
+        const session = await authApi.registerRestaurant({
+          restaurantName,
+          email,
+          password,
+          address: address || undefined,
+        });
+        onSuccess(session);
+        return;
+      } catch (backendErr: unknown) {
+        const msg = backendErr instanceof Error ? backendErr.message : '';
+        if (msg && !msg.includes('Failed to fetch') && !msg.includes('NetworkError')) {
+          setError(msg);
+          setIsLoading(false);
+          return;
+        }
+      }
 
-      const session: AuthSession = {
+      // 2. Fallback local de desarrollo si el backend no está corriendo
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const fallbackSession: AuthSession = {
         accessToken: 'mock_jwt_registered_admin_token',
         user: {
           id: `usr_${Date.now()}`,
           restaurantId: `rest_${Date.now()}`,
           userType: 'ADMIN',
           email,
-          displayName: managerName,
+          displayName: managerName || 'Administrador',
+          roleLabel: 'Administrador',
           permissions: ['*'],
           mustChangePassword: false,
         },
       };
 
-      onSuccess(session);
-    } catch {
-      setError('Error al crear el restaurante. Intenta con otro correo corporativo.');
+      onSuccess(fallbackSession);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al registrar restaurante');
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +82,7 @@ export const RegisterRestaurantForm: React.FC<RegisterRestaurantFormProps> = ({ 
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       <Input
         label="Nombre del restaurante"
-        placeholder="Ej. Restaurante Italiano Trattoria"
+        placeholder="Ej. La Trattoria FMAT"
         value={restaurantName}
         onChange={(e) => setRestaurantName(e.target.value)}
         required
@@ -70,11 +91,10 @@ export const RegisterRestaurantForm: React.FC<RegisterRestaurantFormProps> = ({ 
       />
 
       <Input
-        label="Dirección o sucursal"
+        label="Dirección o sucursal (opcional)"
         placeholder="Ej. Calle 60 #123, Mérida, Yucatán"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
-        required
       />
 
       <Input
@@ -82,26 +102,25 @@ export const RegisterRestaurantForm: React.FC<RegisterRestaurantFormProps> = ({ 
         placeholder="Ej. Carlos Mendoza"
         value={managerName}
         onChange={(e) => setManagerName(e.target.value)}
-        required
         leftIcon={<UserIcon size={18} />}
       />
 
       <Input
-        label="Correo corporativo"
+        label="Correo del Administrador"
         type="email"
-        placeholder="gerente@mitrattoria.com"
+        placeholder="admin@restaurante.com"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
         leftIcon={<MailIcon size={18} />}
-        helperText="Servirá como cuenta raíz de administración"
+        helperText="Servirá como cuenta principal de administración"
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <Input
           label="Contraseña"
           type="password"
-          placeholder="Mínimo 8 caracteres"
+          placeholder="Mínimo 6 caracteres"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required

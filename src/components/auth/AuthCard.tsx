@@ -51,17 +51,15 @@ export const AuthCard: React.FC<AuthCardProps> = ({
               color: 'var(--color-primary)',
             }}
           >
-            FMAT-RESTAURANT · AUTH
+            FMAT RESTAURANT · AUTH
           </span>
         </div>
 
         <h1 style={{ fontSize: '26px', color: 'var(--color-ink)', fontWeight: 700 }}>
-          {activeTab === 'login' ? 'Bienvenido al sistema' : 'Crea tu restaurante'}
+          FMAT Restaurant
         </h1>
         <p style={{ fontSize: '14px', color: 'var(--color-muted)', marginTop: '4px' }}>
-          {activeTab === 'login'
-            ? 'Ingresa tus credenciales para acceder a tu estación'
-            : 'Registra tu establecimiento comercial y cuenta administradora'}
+          Sistema de Autenticación y Control de Personal
         </p>
       </div>
 
@@ -87,7 +85,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({
       {/* Footer info */}
       <div style={{ textAlign: 'center', marginTop: '24px' }}>
         <p style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-          FMAT Restaurant · Proyecto Integrador de Verificación y Validación (UADY)
+          UADY · Verificación y Validación 2026
         </p>
       </div>
     </div>

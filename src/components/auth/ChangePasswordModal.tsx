@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { Modal, Input, Button, LockIcon, ShieldIcon } from '../ui';
+import { authApi } from '../../services/authApi';
 import type { User } from '../../types/auth';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
   user: User | null;
-  onSuccess: () => void;
+  token?: string;
+  onSuccess: (newToken?: string) => void;
   onCancel: () => void;
 }
 
 export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   isOpen,
   user,
+  token,
   onSuccess,
   onCancel,
 }) => {
@@ -25,8 +28,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (newPassword.length < 8) {
-      setError('La nueva contraseña debe tener al menos 8 caracteres');
+    if (newPassword.length < 6) {
+      setError('La nueva contraseña debe tener al menos 6 caracteres');
       return;
     }
 
@@ -43,11 +46,26 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     setIsLoading(true);
 
     try {
-      // Simulación de cambio exitoso
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      if (token) {
+        try {
+          const res = await authApi.changeInitialPassword(currentPassword, newPassword, token);
+          onSuccess(res.accessToken);
+          return;
+        } catch (backendErr: unknown) {
+          const msg = backendErr instanceof Error ? backendErr.message : '';
+          if (msg && !msg.includes('Failed to fetch')) {
+            setError(msg);
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+
+      // Fallback local
+      await new Promise((resolve) => setTimeout(resolve, 500));
       onSuccess();
-    } catch {
-      setError('Error al actualizar la contraseña. Verifica tu clave actual.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar contraseña');
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +75,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     <Modal
       isOpen={isOpen}
       title="Cambio obligatorio de contraseña"
-      description={`Hola ${user?.displayName || 'colaborador'}, has ingresado con una contraseña temporal. Por seguridad, debes definir una clave personal definitiva.`}
+      description={`Hola ${user?.displayName || 'colaborador'}, has ingresado con una contraseña temporal. Por seguridad, debes definir tu clave personal definitiva.`}
       maxWidth="460px"
       closeOnOverlayClick={false}
       footer={
@@ -88,7 +106,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             color: 'var(--color-primary)',
           }}
         >
-          Tu identificador <strong>{user?.staffId || 'E000104'}</strong> se mantendrá intacto tras el cambio.
+          Tu identificador <strong>{user?.staffId || 'M000001'}</strong> se mantendrá activo tras el cambio.
         </div>
 
         <Input
@@ -105,13 +123,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         <Input
           label="Nueva contraseña personal"
           type="password"
-          placeholder="Mínimo 8 caracteres"
+          placeholder="Mínimo 6 caracteres"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           required
           isPasswordToggleable
           leftIcon={<LockIcon size={18} />}
-          helperText="Usa mayúsculas, minúsculas y números"
+          helperText="Mínimo 6 caracteres"
         />
 
         <Input

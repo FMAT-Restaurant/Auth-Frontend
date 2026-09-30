@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Input, UserIcon, MailIcon, LockIcon } from '../ui';
+import { authApi } from '../../services/authApi';
 import type { User, AuthSession } from '../../types/auth';
 
 interface LoginFormProps {
@@ -11,7 +12,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onSuccess,
   onRequirePasswordChange,
 }) => {
-  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [isStaff, setIsStaff] = useState(true);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -23,10 +24,30 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setIsLoading(true);
 
     try {
-      // Mock / Simulación para desarrollo autónomo del Frontend (Sprint 1)
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      // 1. Intentar autenticar contra el Auth-Backend real
+      try {
+        const session = await authApi.login(identifier, password);
+        if (session.user.mustChangePassword) {
+          onRequirePasswordChange(session.user);
+        } else {
+          onSuccess(session);
+        }
+        return;
+      } catch (backendErr: unknown) {
+        // Si el backend arrojó un error de credenciales explícito (401/400)
+        const msg = backendErr instanceof Error ? backendErr.message : '';
+        if (msg && !msg.includes('Failed to fetch') && !msg.includes('NetworkError')) {
+          setError(msg);
+          setIsLoading(false);
+          return;
+        }
+        // Si el backend no está corriendo, continuamos con el fallback local de desarrollo
+      }
 
-      if (isAdminMode) {
+      // 2. Fallback de desarrollo local si el backend local no está encendido
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      if (!isStaff) {
         if (!identifier.includes('@')) {
           setError('Introduce un correo electrónico válido');
           setIsLoading(false);
@@ -47,17 +68,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         };
         onSuccess(adminSession);
       } else {
-        // Validación de formato Staff ID E000000
-        const staffIdRegex = /^[A-Z][0-9]{6}$/;
         const upperStaffId = identifier.trim().toUpperCase();
-
-        if (!staffIdRegex.test(upperStaffId)) {
-          setError('El identificador debe tener formato E000001 (1 letra y 6 números)');
-          setIsLoading(false);
-          return;
-        }
-
-        // Si la contraseña contiene "temp", simulamos que requiere cambio obligatorio
         const isTemporary = password.toLowerCase().includes('temp') || password === '123456';
 
         const staffUser: User = {
@@ -65,13 +76,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           restaurantId: 'rest_demo_fmat',
           userType: 'STAFF',
           staffId: upperStaffId,
-          displayName: 'Juan Pérez',
-          roleLabel: 'Líder de inventario',
+          displayName: 'Colaborador FMAT',
+          roleLabel: 'Personal Operativo',
           permissions: [
+            'orders:view',
+            'orders:create',
+            'menu:view',
             'inventory:view',
-            'inventory:ingredients:create',
-            'inventory:ingredients:delete',
-            'inventory:stock:update_status',
+            'sala:tables:view',
           ],
           mustChangePassword: isTemporary,
         };
@@ -85,37 +97,104 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           });
         }
       }
-    } catch {
-      setError('Ocurrió un error al intentar iniciar sesión. Intenta nuevamente.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const fillQuickCredentials = (type: 'admin' | 'staff') => {
+    if (type === 'admin') {
+      setIsStaff(false);
+      setIdentifier('admin@fmat.com');
+      setPassword('Admin123!');
+    } else {
+      setIsStaff(true);
+      setIdentifier('M000001');
+      setPassword('Temp1234!');
+    }
+    setError(null);
+  };
+
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {isAdminMode ? (
+      {/* Selector de Modo: Personal vs Gerente */}
+      <div
+        style={{
+          display: 'flex',
+          backgroundColor: '#F3F4F6',
+          padding: '4px',
+          borderRadius: 'var(--radius-control)',
+          gap: '4px',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setIsStaff(true);
+            setError(null);
+          }}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            fontSize: '13px',
+            fontWeight: isStaff ? 600 : 500,
+            color: isStaff ? 'var(--color-primary)' : 'var(--color-muted)',
+            backgroundColor: isStaff ? '#FFFFFF' : 'transparent',
+            border: 'none',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            boxShadow: isStaff ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+          }}
+        >
+          Personal (Staff ID)
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIsStaff(false);
+            setError(null);
+          }}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            fontSize: '13px',
+            fontWeight: !isStaff ? 600 : 500,
+            color: !isStaff ? 'var(--color-primary)' : 'var(--color-muted)',
+            backgroundColor: !isStaff ? '#FFFFFF' : 'transparent',
+            border: 'none',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            boxShadow: !isStaff ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+          }}
+        >
+          Gerente / Admin
+        </button>
+      </div>
+
+      {isStaff ? (
         <Input
-          label="Correo corporativo del administrador"
+          label="Staff ID"
+          type="text"
+          placeholder="Ej. M000001"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value.toUpperCase())}
+          required
+          leftIcon={<UserIcon size={18} />}
+          helperText="Código de 7 caracteres emitido por el administrador"
+        />
+      ) : (
+        <Input
+          label="Correo Electrónico"
           type="email"
-          placeholder="ejemplo@restaurante.com"
+          placeholder="admin@fmat.com"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
           required
           leftIcon={<MailIcon size={18} />}
-          helperText="Cuenta de administración registrada por el dueño"
-        />
-      ) : (
-        <Input
-          label="Identificador de personal (Staff ID)"
-          type="text"
-          placeholder="E000104"
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value.toUpperCase())}
-          required
-          maxLength={7}
-          leftIcon={<UserIcon size={18} />}
-          helperText="Código de 7 caracteres proporcionado por tu gerente"
+          helperText="Correo corporativo del dueño o gerente"
         />
       )}
 
@@ -131,33 +210,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         error={error || undefined}
       />
 
-      <div style={{ display: 'flex', justifyContent: 'center', margin: '4px 0' }}>
-        <button
-          type="button"
-          onClick={() => {
-            setIsAdminMode(!isAdminMode);
-            setError(null);
-            setIdentifier('');
-            setPassword('');
-          }}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--color-primary)',
-            fontSize: '13px',
-            fontWeight: 500,
-            cursor: 'pointer',
-            padding: '4px 8px',
-            borderRadius: 'var(--radius-sm)',
-            textDecoration: 'underline',
-          }}
-        >
-          {isAdminMode
-            ? '← ¿Eres personal operativo? Ingresa con tu Staff ID'
-            : '¿Eres administrador? Inicia sesión con correo corporativo →'}
-        </button>
-      </div>
-
       <Button
         type="submit"
         variant="primary"
@@ -165,13 +217,48 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         fullWidth
         isLoading={isLoading}
       >
-        {isAdminMode ? 'Acceder al Panel Administrativo' : 'Iniciar sesión'}
+        {isStaff ? 'Iniciar Sesión' : 'Acceder al Panel Administrativo'}
       </Button>
 
-      <div style={{ textAlign: 'center', marginTop: '8px' }}>
-        <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-          Tip de prueba: Usa contraseña <strong>"123456"</strong> para probar el modal de cambio forzoso.
+      {/* Acceso Rápido para Pruebas / Demos */}
+      <div style={{ marginTop: '4px', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
+        <span style={{ fontSize: '11px', color: 'var(--color-muted)', display: 'block', marginBottom: '6px' }}>
+          Credenciales de prueba rápida (clic para autocompletar):
         </span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={() => fillQuickCredentials('admin')}
+            style={{
+              padding: '6px 8px',
+              fontSize: '11px',
+              textAlign: 'left',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-canvas)',
+              cursor: 'pointer',
+            }}
+          >
+            <strong>👑 Admin</strong>
+            <span style={{ display: 'block', color: 'var(--color-muted)' }}>admin@fmat.com</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => fillQuickCredentials('staff')}
+            style={{
+              padding: '6px 8px',
+              fontSize: '11px',
+              textAlign: 'left',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-canvas)',
+              cursor: 'pointer',
+            }}
+          >
+            <strong>🧑‍🍳 Personal</strong>
+            <span style={{ display: 'block', color: 'var(--color-muted)' }}>M000001 (Temp)</span>
+          </button>
+        </div>
       </div>
     </form>
   );
