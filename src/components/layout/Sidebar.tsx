@@ -345,19 +345,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
           </div>
-
-          <div
-            style={{
-              color:
-                activeModule === 'perfil'
-                  ? 'var(--color-primary)'
-                  : 'var(--color-muted)',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <SettingsIcon size={16} />
-          </div>
         </button>
 
         {/* Reallocated Logout Button */}

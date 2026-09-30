@@ -624,7 +624,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
               lineHeight: 1.5,
             }}
           >
-            <strong>Advertencia crítica:</strong> Se eliminarán en cascada todos los datos en PostgreSQL Neon.
+            <strong>Advertencia crítica:</strong> Se eliminarán todos los datos de la base de datos registrados a esta cuenta.
             Para confirmar, escribe <strong>ELIMINAR</strong> en el siguiente campo:
           </div>
 
