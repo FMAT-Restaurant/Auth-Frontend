@@ -127,6 +127,8 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
           alignItems: 'flex-start',
           paddingBottom: '16px',
           borderBottom: '1px solid var(--color-border)',
+          flexWrap: 'wrap',
+          gap: '16px',
         }}
       >
         <div>
@@ -141,8 +143,8 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
           >
             Panel de Administración · Auth
           </span>
-          <h1 style={{ fontSize: '24px', marginTop: '2px' }}>Gestión de Personal y Permisos</h1>
-          <p style={{ fontSize: '14px', color: 'var(--color-muted)' }}>
+          <h1 style={{ fontSize: '24px', marginTop: '2px', color: 'var(--color-ink)', fontWeight: 700 }}>Gestión de Personal y Permisos</h1>
+          <p style={{ fontSize: '14px', color: 'var(--color-muted)', margin: 0 }}>
             Sesión: <strong>{currentUser.displayName}</strong> ({currentUser.email || currentUser.staffId})
           </p>
         </div>
@@ -166,7 +168,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
           style={{
             padding: '12px 16px',
             backgroundColor: 'var(--color-success-bg)',
-            border: '1px solid #BBF7D0',
+            border: '1px solid var(--color-success)',
             borderRadius: 'var(--radius-control)',
             color: 'var(--color-success)',
             fontSize: '13px',
@@ -182,7 +184,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
           style={{
             padding: '12px 16px',
             backgroundColor: 'var(--color-error-bg)',
-            border: '1px solid #FECACA',
+            border: '1px solid var(--color-error)',
             borderRadius: 'var(--radius-control)',
             color: 'var(--color-error)',
             fontSize: '13px',
@@ -195,13 +197,13 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
       {/* Create Staff Form Card */}
       {showCreateForm && (
         <Card padding="md" style={{ border: '1px solid var(--color-primary)' }}>
-          <h2 style={{ fontSize: '18px', marginBottom: '4px' }}>Registrar nuevo colaborador en la Base de Datos</h2>
+          <h2 style={{ fontSize: '18px', marginBottom: '4px', color: 'var(--color-ink)' }}>Registrar nuevo colaborador en la Base de Datos</h2>
           <p style={{ fontSize: '13px', color: 'var(--color-muted)', marginBottom: '16px' }}>
             El backend generará automáticamente un Staff ID único basado en el rol primario (ej. M000001) y la clave temporal.
           </p>
 
           <form onSubmit={handleCreateStaff} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
               <Input
                 label="Nombre(s)"
                 placeholder="Ej. Juan"

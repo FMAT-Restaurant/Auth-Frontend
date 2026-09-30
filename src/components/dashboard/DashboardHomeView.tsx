@@ -21,10 +21,10 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUse
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
       {/* Header sin insignias técnicas */}
       <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '28px', color: 'var(--color-ink)', fontWeight: 700 }}>
+        <h1 style={{ fontSize: '26px', color: 'var(--color-ink)', fontWeight: 700, margin: 0 }}>
           Bienvenido, {currentUser.displayName}
         </h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '14px', color: 'var(--color-muted)' }}>
             Identificador: <strong>{currentUser.staffId || 'ADMINISTRADOR'}</strong>
           </span>
@@ -41,7 +41,7 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUse
 
       {/* Módulos disponibles para el usuario */}
       <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '18px', marginBottom: '12px', color: 'var(--color-ink)' }}>
+        <h2 style={{ fontSize: '18px', marginBottom: '16px', color: 'var(--color-ink)', fontWeight: 700 }}>
           Módulos de trabajo
         </h2>
 
@@ -60,13 +60,16 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUse
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
                     <PackageIcon size={20} />
                   </div>
-                  <h3 style={{ fontSize: '16px' }}>Inventario y Almacén</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-ink)', margin: 0 }}>
+                    Inventario y Almacén
+                  </h3>
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--color-muted)' }}>
+                <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0 }}>
                   Gestión de existencias, control de ingredientes y actualización de estados de disponibilidad.
                 </p>
               </div>
@@ -90,13 +93,16 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUse
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
                     <UtensilsIcon size={20} />
                   </div>
-                  <h3 style={{ fontSize: '16px' }}>Órdenes y Cocina</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-ink)', margin: 0 }}>
+                    Órdenes y Cocina
+                  </h3>
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--color-muted)' }}>
+                <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0 }}>
                   Apertura y seguimiento de comandas, visualización de pedidos en KDS y despacho culinario.
                 </p>
               </div>
@@ -120,13 +126,16 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUse
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
                     <MenuBookIcon size={20} />
                   </div>
-                  <h3 style={{ fontSize: '16px' }}>Menú y Catálogo</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-ink)', margin: 0 }}>
+                    Menú y Catálogo
+                  </h3>
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--color-muted)' }}>
+                <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0 }}>
                   Consulta de catálogo gastronómico, categorías, recetas y disponibilidad comercial.
                 </p>
               </div>
@@ -150,13 +159,16 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUse
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
                     <ArmchairIcon size={20} />
                   </div>
-                  <h3 style={{ fontSize: '16px' }}>Sala y Mesas</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-ink)', margin: 0 }}>
+                    Sala y Mesas
+                  </h3>
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--color-muted)' }}>
+                <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0 }}>
                   Mapa de distribución del restaurante, asignación de comensales y control de mesas.
                 </p>
               </div>
@@ -180,13 +192,16 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUse
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
                     <CreditCardIcon size={20} />
                   </div>
-                  <h3 style={{ fontSize: '16px' }}>Caja y Cuentas</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-ink)', margin: 0 }}>
+                    Caja y Cuentas
+                  </h3>
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--color-muted)' }}>
+                <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0 }}>
                   Emisión de pre-cuentas de mesa, cobro y registro de formas de pago.
                 </p>
               </div>

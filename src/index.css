@@ -93,3 +93,108 @@ button, input, select, textarea {
   font-family: inherit;
   transition: all 0.15s ease-in-out;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-ink);
+}
+
+/* Clases utilitarias responsivas */
+.fmat-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .fmat-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.fmat-danger-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .fmat-danger-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Sidebar Responsiva y Mobile Topbar */
+.fmat-sidebar {
+  width: 260px;
+  height: 100vh;
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 50;
+  user-select: none;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fmat-mobile-topbar {
+  display: none;
+}
+
+.fmat-mobile-close-btn {
+  display: none;
+}
+
+.fmat-layout-main {
+  margin-left: 260px;
+  flex: 1;
+  min-height: 100vh;
+  padding: 32px 40px;
+  background-color: var(--color-canvas);
+  overflow-y: auto;
+  transition: margin-left 0.2s ease-in-out, padding 0.2s ease-in-out;
+}
+
+@media (max-width: 1023px) {
+  .fmat-sidebar {
+    transform: translateX(-100%);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  }
+
+  .fmat-sidebar.fmat-sidebar--open {
+    transform: translateX(0);
+  }
+
+  .fmat-mobile-topbar {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 0 16px;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 40;
+  }
+
+  .fmat-mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .fmat-layout-main {
+    margin-left: 0 !important;
+    padding: 72px 16px 32px 16px !important;
+    width: 100%;
+  }
+}

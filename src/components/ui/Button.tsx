@@ -134,9 +134,9 @@ export const Button: React.FC<ButtonProps> = ({
         </>
       ) : (
         <>
-          {leftIcon && <span style={{ display: 'inline-flex' }}>{leftIcon}</span>}
-          <span>{children}</span>
-          {rightIcon && <span style={{ display: 'inline-flex' }}>{rightIcon}</span>}
+          {leftIcon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{leftIcon}</span>}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>{children}</span>
+          {rightIcon && <span style={{ display: 'inline-flex', alignItems: 'center' }}>{rightIcon}</span>}
         </>
       )}
     </button>

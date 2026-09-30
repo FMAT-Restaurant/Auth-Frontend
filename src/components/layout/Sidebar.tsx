@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   HomeIcon,
   PackageIcon,
@@ -8,6 +7,7 @@ import {
   CreditCardIcon,
   SettingsIcon,
   LogOutIcon,
+  XIcon,
 } from '../ui/Icons';
 import type { User } from '../../types/auth';
 
@@ -26,6 +26,8 @@ interface SidebarProps {
   activeModule: NavModuleId;
   onSelectModule: (moduleId: NavModuleId) => void;
   onLogout: () => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -33,6 +35,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeModule,
   onSelectModule,
   onLogout,
+  isMobileOpen = false,
+  onCloseMobile,
 }) => {
   const serviceItems: NavItem[] = [
     { id: 'sala', label: 'Sala', icon: <ArmchairIcon size={18} />, requiredModule: 'sala' },
@@ -64,7 +68,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <button
         key={item.id}
         type="button"
-        onClick={() => onSelectModule(item.id)}
+        onClick={() => {
+          onSelectModule(item.id);
+          if (onCloseMobile) onCloseMobile();
+        }}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -103,65 +110,72 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside
-      style={{
-        width: '260px',
-        height: '100vh',
-        backgroundColor: 'var(--color-surface)',
-        borderRight: '1px solid var(--color-border)',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        zIndex: 30,
-        userSelect: 'none',
-      }}
-    >
+    <aside className={`fmat-sidebar ${isMobileOpen ? 'fmat-sidebar--open' : ''}`}>
       {/* Brand Header */}
       <div
         style={{
-          padding: '24px 20px',
+          padding: '20px 16px',
           borderBottom: '1px solid var(--color-border)',
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
+          justifyContent: 'space-between',
         }}
       >
-        <div
-          style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: 'var(--radius-control)',
-            backgroundColor: 'var(--color-primary)',
-            color: '#FFFFFF',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '16px',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          F
-        </div>
-        <div>
-          <span
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
             style={{
-              fontSize: '15px',
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--radius-control)',
+              backgroundColor: 'var(--color-primary)',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               fontWeight: 800,
-              color: 'var(--color-ink)',
+              fontSize: '16px',
               letterSpacing: '-0.02em',
-              display: 'block',
+              flexShrink: 0,
             }}
           >
-            FMAT-RESTAURANT
-          </span>
-          <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-            Sistema de Restaurante
-          </span>
+            F
+          </div>
+          <div>
+            <span
+              style={{
+                fontSize: '15px',
+                fontWeight: 800,
+                color: 'var(--color-ink)',
+                letterSpacing: '-0.02em',
+                display: 'block',
+              }}
+            >
+              FMAT-RESTAURANT
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
+              Sistema de Restaurante
+            </span>
+          </div>
         </div>
+
+        {onCloseMobile && (
+          <button
+            type="button"
+            className="fmat-mobile-close-btn"
+            onClick={onCloseMobile}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--color-muted)',
+              cursor: 'pointer',
+              padding: '6px',
+              borderRadius: 'var(--radius-control)',
+            }}
+            aria-label="Cerrar navegación"
+          >
+            <XIcon size={20} />
+          </button>
+        )}
       </div>
 
       {/* Navigation Links */}
@@ -231,7 +245,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* User Card / Click to open Perfil & Configuración */}
         <button
           type="button"
-          onClick={() => onSelectModule('perfil')}
+          onClick={() => {
+            onSelectModule('perfil');
+            if (onCloseMobile) onCloseMobile();
+          }}
           title="Ver perfil y configuración"
           style={{
             display: 'flex',
@@ -346,7 +363,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Reallocated Logout Button */}
         <button
           type="button"
-          onClick={onLogout}
+          onClick={() => {
+            onLogout();
+            if (onCloseMobile) onCloseMobile();
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',

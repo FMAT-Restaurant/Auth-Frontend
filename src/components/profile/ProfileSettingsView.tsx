@@ -40,7 +40,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   );
   const [phone, setPhone] = useState(currentUser.phone || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
+  const [isProfileSaved, setIsProfileSaved] = useState(false);
   const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
 
   // Estado de Datos del Restaurante (solo Admin)
@@ -51,7 +51,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   );
   const [restaurantAddress, setRestaurantAddress] = useState(currentUser.restaurantAddress || '');
   const [isUpdatingRestaurant, setIsUpdatingRestaurant] = useState(false);
-  const [restaurantSuccessMsg, setRestaurantSuccessMsg] = useState<string | null>(null);
+  const [isRestaurantSaved, setIsRestaurantSaved] = useState(false);
   const [restaurantErrorMsg, setRestaurantErrorMsg] = useState<string | null>(null);
 
   // Estado de Apariencia (Modo Oscuro)
@@ -97,7 +97,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
     e.preventDefault();
     if (!token) return;
     setProfileErrorMsg(null);
-    setProfileSuccessMsg(null);
 
     if (!firstName.trim() || !lastName.trim()) {
       setProfileErrorMsg('El nombre y los apellidos son obligatorios');
@@ -124,8 +123,8 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
       };
 
       onUpdateUser(updatedUser);
-      setProfileSuccessMsg('Tu información personal se ha guardado exitosamente');
-      setTimeout(() => setProfileSuccessMsg(null), 4000);
+      setIsProfileSaved(true);
+      setTimeout(() => setIsProfileSaved(false), 3500);
     } catch (err: unknown) {
       setProfileErrorMsg(
         err instanceof Error ? err.message : 'Error al guardar cambios personales',
@@ -140,7 +139,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
     e.preventDefault();
     if (!token) return;
     setRestaurantErrorMsg(null);
-    setRestaurantSuccessMsg(null);
 
     if (!restaurantName.trim()) {
       setRestaurantErrorMsg('El nombre del restaurante es obligatorio');
@@ -166,8 +164,8 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
       };
 
       onUpdateUser(updatedUser);
-      setRestaurantSuccessMsg('La información del restaurante se ha actualizado exitosamente');
-      setTimeout(() => setRestaurantSuccessMsg(null), 4000);
+      setIsRestaurantSaved(true);
+      setTimeout(() => setIsRestaurantSaved(false), 3500);
     } catch (err: unknown) {
       setRestaurantErrorMsg(
         err instanceof Error ? err.message : 'Error al actualizar el restaurante',
@@ -202,12 +200,12 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   };
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
       <div>
         <h1
           style={{
-            fontSize: '28px',
+            fontSize: '26px',
             fontWeight: 800,
             color: 'var(--color-ink)',
             letterSpacing: '-0.02em',
@@ -216,9 +214,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
         >
           Perfil y Configuración
         </h1>
-        <p style={{ fontSize: '14px', color: 'var(--color-muted)', marginTop: '4px', margin: 0 }}>
-          Administra tus datos de usuario, la información de tu establecimiento, apariencia y preferencias.
-        </p>
       </div>
 
       {/* SECCIÓN 1: DATOS PERSONALES */}
@@ -234,6 +229,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
             <UserIcon size={22} />
@@ -242,32 +238,8 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
               Información Personal
             </h2>
-            <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0 }}>
-              Edita tu nombre y datos de contacto en la plataforma
-            </p>
           </div>
         </div>
-
-        {profileSuccessMsg && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '12px 16px',
-              marginBottom: '20px',
-              backgroundColor: 'var(--color-success-bg)',
-              color: 'var(--color-success)',
-              borderRadius: 'var(--radius-control)',
-              fontSize: '14px',
-              fontWeight: 500,
-              border: '1px solid var(--color-success)',
-            }}
-          >
-            <CheckIcon size={18} />
-            <span>{profileSuccessMsg}</span>
-          </div>
-        )}
 
         {profileErrorMsg && (
           <div
@@ -291,28 +263,37 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
         )}
 
         <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="fmat-grid-2">
             <Input
               label="Nombre"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => {
+                setFirstName(e.target.value);
+                setIsProfileSaved(false);
+              }}
               placeholder="Ej. Rolando"
               required
             />
             <Input
               label="Apellidos"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={(e) => {
+                setLastName(e.target.value);
+                setIsProfileSaved(false);
+              }}
               placeholder="Ej. Castro Santeliz"
               required
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="fmat-grid-2">
             <Input
               label="Teléfono / Móvil"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                setIsProfileSaved(false);
+              }}
               placeholder="Ej. +52 999 123 4567"
             />
             <Input
@@ -323,10 +304,26 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-            <Button type="submit" variant="primary" isLoading={isUpdatingProfile}>
-              Guardar cambios personales
-            </Button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '8px', minHeight: '40px' }}>
+            {isProfileSaved ? (
+              <span
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: 'var(--color-muted)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  userSelect: 'none',
+                }}
+              >
+                <CheckIcon size={16} /> Guardado
+              </span>
+            ) : (
+              <Button type="submit" variant="primary" isLoading={isUpdatingProfile}>
+                Guardar cambios personales
+              </Button>
+            )}
           </div>
         </form>
       </Card>
@@ -345,6 +342,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
               <StoreIcon size={22} />
@@ -353,32 +351,8 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
               <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
                 Datos del Restaurante
               </h2>
-              <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0 }}>
-                Información del establecimiento, razón social y ubicación
-              </p>
             </div>
           </div>
-
-          {restaurantSuccessMsg && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 16px',
-                marginBottom: '20px',
-                backgroundColor: 'var(--color-success-bg)',
-                color: 'var(--color-success)',
-                borderRadius: 'var(--radius-control)',
-                fontSize: '14px',
-                fontWeight: 500,
-                border: '1px solid var(--color-success)',
-              }}
-            >
-              <CheckIcon size={18} />
-              <span>{restaurantSuccessMsg}</span>
-            </div>
-          )}
 
           {restaurantErrorMsg && (
             <div
@@ -402,18 +376,24 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
           )}
 
           <form onSubmit={handleSaveRestaurant} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="fmat-grid-2">
               <Input
                 label="Nombre Oficial / Razón Social"
                 value={restaurantName}
-                onChange={(e) => setRestaurantName(e.target.value)}
+                onChange={(e) => {
+                  setRestaurantName(e.target.value);
+                  setIsRestaurantSaved(false);
+                }}
                 placeholder="Ej. FMAT Bistro Gourmet"
                 required
               />
               <Input
                 label="Nombre Comercial"
                 value={commercialName}
-                onChange={(e) => setCommercialName(e.target.value)}
+                onChange={(e) => {
+                  setCommercialName(e.target.value);
+                  setIsRestaurantSaved(false);
+                }}
                 placeholder="Ej. Bistro FMAT Centro"
               />
             </div>
@@ -421,15 +401,34 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
             <Input
               label="Ubicación / Dirección"
               value={restaurantAddress}
-              onChange={(e) => setRestaurantAddress(e.target.value)}
+              onChange={(e) => {
+                setRestaurantAddress(e.target.value);
+                setIsRestaurantSaved(false);
+              }}
               placeholder="Ej. Calle 60 #240 x 43 y 45, Centro, Mérida, Yucatán"
               leftIcon={<MapPinIcon size={18} />}
             />
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <Button type="submit" variant="primary" isLoading={isUpdatingRestaurant}>
-                Guardar datos del restaurante
-              </Button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '8px', minHeight: '40px' }}>
+              {isRestaurantSaved ? (
+                <span
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: 'var(--color-muted)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    userSelect: 'none',
+                  }}
+                >
+                  <CheckIcon size={16} /> Guardado
+                </span>
+              ) : (
+                <Button type="submit" variant="primary" isLoading={isUpdatingRestaurant}>
+                  Guardar datos del restaurante
+                </Button>
+              )}
             </div>
           </form>
         </Card>
@@ -448,6 +447,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
             {currentTheme === 'dark' ? <MoonIcon size={22} /> : <SunIcon size={22} />}
@@ -456,13 +456,10 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
             <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
               Apariencia y Tema
             </h2>
-            <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0 }}>
-              Selecciona el estilo visual que prefieras para la interfaz del sistema
-            </p>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className="fmat-grid-2">
           {/* Opción Modo Claro */}
           <button
             type="button"
@@ -490,6 +487,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
               <SunIcon size={22} />
@@ -531,6 +529,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
               <MoonIcon size={22} />
@@ -555,7 +554,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
           backgroundColor: 'var(--color-error-bg)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '24px' }}>
+        <div className="fmat-danger-header">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
               <ShieldIcon size={20} color="var(--color-error)" />
@@ -563,25 +562,23 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                 Zona de Peligro
               </h2>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--color-text)', margin: 0, maxWidth: '580px' }}>
-              {isAdmin
-                ? 'Eliminar el restaurante borrará de forma permanente el establecimiento, todos los colaboradores asociados, roles e historiales en Neon Database. Esta acción no se puede deshacer.'
-                : 'Eliminar tu cuenta operativa revocará tus accesos y credenciales de forma permanente.'}
+            <p style={{ fontSize: '13px', color: 'var(--color-text)', margin: 0, maxWidth: '560px', lineHeight: 1.5 }}>
+              Eliminar tu cuenta operativa revocará tus accesos y credenciales. Esta acción es irreversible.
             </p>
           </div>
 
           <Button
             type="button"
             variant="destructive"
+            leftIcon={<TrashIcon size={16} />}
             onClick={() => {
               setDeleteConfirmInput('');
               setDeleteError(null);
               setIsDeleteModalOpen(true);
             }}
-            style={{ flexShrink: 0 }}
+            style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
           >
-            <TrashIcon size={16} />
-            <span>{isAdmin ? 'Dar de baja restaurante' : 'Eliminar mi cuenta'}</span>
+            {isAdmin ? 'Dar de baja restaurante' : 'Eliminar mi cuenta'}
           </Button>
         </div>
       </Card>
@@ -593,7 +590,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
         title={isAdmin ? '¿Dar de baja restaurante definitivamente?' : '¿Eliminar cuenta de usuario?'}
         description="Esta acción es completamente irreversible y eliminará todos los registros asociados en la base de datos."
         footer={
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', width: '100%' }}>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', width: '100%', flexWrap: 'wrap' }}>
             <Button
               type="button"
               variant="secondary"
@@ -605,12 +602,12 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
             <Button
               type="button"
               variant="destructive"
+              leftIcon={isDeleting ? <LoaderIcon size={16} /> : <TrashIcon size={16} />}
               onClick={handleConfirmDelete}
               isLoading={isDeleting}
               disabled={deleteConfirmInput.trim().toUpperCase() !== 'ELIMINAR'}
             >
-              {isDeleting ? <LoaderIcon size={16} /> : <TrashIcon size={16} />}
-              <span>Confirmar y eliminar</span>
+              Confirmar y eliminar
             </Button>
           </div>
         }
