@@ -104,7 +104,7 @@ export const Input: React.FC<InputProps> = ({
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             tabIndex={-1}
-            aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+            aria-label={showPassword ? 'Ocultar clave' : 'Mostrar clave'}
             style={{
               position: 'absolute',
               right: '10px',

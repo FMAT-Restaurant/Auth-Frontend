@@ -2,10 +2,12 @@ export interface User {
   id: string;
   restaurantId: string;
   userType: 'ADMIN' | 'STAFF';
-  staffId?: string; // E000104 para personal, undefined/ADMIN para admin
+  staffId?: string; // M000001 / E000001 para personal, ADMIN para admin
   email?: string;
   displayName: string;
-  roleLabel?: string; // Etiqueta descriptiva libre: ej. "Líder de inventario"
+  roleLabel?: string; // Etiqueta descriptiva libre: ej. "Mesero", "Líder de inventario"
+  roles?: string[]; // Roles devueltos por el backend: ["ADMINISTRADOR"], ["MESERO", "HOST"]
+  views?: string[]; // Vistas autorizadas: ["orders-pos-view", "menu-catalog-view"]
   permissions: string[]; // Lista de códigos PBAC: ej. ["inventory:view", "inventory:ingredients:create"]
   mustChangePassword?: boolean;
 }
