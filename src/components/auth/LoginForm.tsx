@@ -24,81 +24,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setIsLoading(true);
 
     try {
-      // 1. Intentar autenticar contra el Auth-Backend real
-      try {
-        const session = await authApi.login(identifier, password);
-        if (session.user.mustChangePassword) {
-          onRequirePasswordChange(session.user);
-        } else {
-          onSuccess(session);
-        }
-        return;
-      } catch (backendErr: unknown) {
-        // Si el backend arrojó un error de credenciales explícito (401/400)
-        const msg = backendErr instanceof Error ? backendErr.message : '';
-        if (msg && !msg.includes('Failed to fetch') && !msg.includes('NetworkError')) {
-          setError(msg);
-          setIsLoading(false);
-          return;
-        }
-        // Si el backend no está corriendo, continuamos con el fallback local de desarrollo
-      }
-
-      // 2. Fallback de desarrollo local si el backend local no está encendido
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      if (!isStaff) {
-        if (!identifier.includes('@')) {
-          setError('Introduce un correo electrónico válido');
-          setIsLoading(false);
-          return;
-        }
-
-        const adminSession: AuthSession = {
-          accessToken: 'mock_jwt_admin_token',
-          user: {
-            id: 'usr_admin_001',
-            restaurantId: 'rest_demo_fmat',
-            userType: 'ADMIN',
-            email: identifier,
-            displayName: 'Gerente General',
-            permissions: ['*'],
-            mustChangePassword: false,
-          },
-        };
-        onSuccess(adminSession);
+      const session = await authApi.login(identifier, password);
+      if (session.user.mustChangePassword) {
+        onRequirePasswordChange(session.user);
       } else {
-        const upperStaffId = identifier.trim().toUpperCase();
-        const isTemporary = password.toLowerCase().includes('temp') || password === '123456';
-
-        const staffUser: User = {
-          id: 'usr_staff_104',
-          restaurantId: 'rest_demo_fmat',
-          userType: 'STAFF',
-          staffId: upperStaffId,
-          displayName: 'Colaborador FMAT',
-          roleLabel: 'Personal Operativo',
-          permissions: [
-            'orders:view',
-            'orders:create',
-            'menu:view',
-            'inventory:view',
-            'sala:tables:view',
-          ],
-          mustChangePassword: isTemporary,
-        };
-
-        if (isTemporary) {
-          onRequirePasswordChange(staffUser);
-        } else {
-          onSuccess({
-            accessToken: 'mock_jwt_staff_token',
-            user: staffUser,
-          });
-        }
+        onSuccess(session);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      setError(err instanceof Error ? err.message : 'Error al conectar con el servidor de autenticación');
     } finally {
       setIsLoading(false);
     }
@@ -183,7 +116,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           onChange={(e) => setIdentifier(e.target.value.toUpperCase())}
           required
           leftIcon={<UserIcon size={18} />}
-          helperText="Código de 7 caracteres emitido por el administrador"
+          helperText="Código emitido por tu administrador (ej. M000001, H000001)"
         />
       ) : (
         <Input
@@ -223,7 +156,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       {/* Acceso Rápido para Pruebas / Demos */}
       <div style={{ marginTop: '4px', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
         <span style={{ fontSize: '11px', color: 'var(--color-muted)', display: 'block', marginBottom: '6px' }}>
-          Credenciales de prueba rápida (clic para autocompletar):
+          Atajos de credenciales (clic para autocompletar):
         </span>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <button

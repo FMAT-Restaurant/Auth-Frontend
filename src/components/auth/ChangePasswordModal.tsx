@@ -43,27 +43,16 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       return;
     }
 
+    if (!token) {
+      setError('No se encontró token de sesión activa');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      if (token) {
-        try {
-          const res = await authApi.changeInitialPassword(currentPassword, newPassword, token);
-          onSuccess(res.accessToken);
-          return;
-        } catch (backendErr: unknown) {
-          const msg = backendErr instanceof Error ? backendErr.message : '';
-          if (msg && !msg.includes('Failed to fetch')) {
-            setError(msg);
-            setIsLoading(false);
-            return;
-          }
-        }
-      }
-
-      // Fallback local
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      onSuccess();
+      const res = await authApi.changeInitialPassword(currentPassword, newPassword, token);
+      onSuccess(res.accessToken);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al actualizar contraseña');
     } finally {

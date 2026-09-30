@@ -109,7 +109,13 @@ export const App: React.FC = () => {
         return <DashboardHomeView currentUser={user} onNavigate={setActiveModule} />;
       case 'personal':
         if (user.userType === 'ADMIN') {
-          return <StaffManagementView currentUser={user} onLogout={handleLogout} />;
+          return (
+            <StaffManagementView
+              currentUser={user}
+              token={currentSession.accessToken}
+              onLogout={handleLogout}
+            />
+          );
         }
         return <DashboardHomeView currentUser={user} onNavigate={setActiveModule} />;
       case 'inventario':

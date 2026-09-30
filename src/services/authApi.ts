@@ -34,17 +34,14 @@ export interface RegisterRestaurantResponse {
 
 export interface BackendStaffItem {
   id: string;
-  email?: string;
+  staffId?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  roles: string[];
   isActive: boolean;
   passwordStatus: string;
-  roles: Array<{ code: string; name: string }>;
-  staffProfile?: {
-    id: string;
-    staffId: string;
-    firstName: string;
-    lastName: string;
-    phone?: string;
-  };
+  createdAt?: string;
 }
 
 // Mapea los roles del backend a permisos PBAC estándar del sistema
@@ -100,8 +97,8 @@ export const authApi = {
       throw new Error(data.message || 'Error al iniciar sesión');
     }
 
-    const roleCodes = data.user.roles || [];
-    const isStaff = data.user.staffId && data.user.staffId !== 'ADMIN';
+    const roleCodes: string[] = data.user.roles || [];
+    const isStaff = Boolean(data.user.staffId && data.user.staffId !== 'ADMIN');
     const permissions = rolesToPermissions(roleCodes);
 
     const user: User = {
@@ -242,18 +239,14 @@ export const authApi = {
     const data: BackendStaffItem[] = await res.json();
 
     return data.map((item) => {
-      const roles = (item.roles || []).map((r) => r.code);
-      const isStaff = Boolean(item.staffProfile?.staffId);
-      const name = item.staffProfile
-        ? `${item.staffProfile.firstName} ${item.staffProfile.lastName}`.trim()
-        : item.email || 'Usuario';
+      const roles = item.roles || [];
+      const name = `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Colaborador';
 
       return {
         id: item.id,
         restaurantId: '',
-        userType: isStaff ? 'STAFF' : 'ADMIN',
-        staffId: item.staffProfile?.staffId || 'ADMIN',
-        email: item.email,
+        userType: 'STAFF',
+        staffId: item.staffId || 'E000000',
         displayName: name,
         roleLabel: roles.join(', '),
         roles,
@@ -272,7 +265,7 @@ export const authApi = {
       initialPassword?: string;
     },
     token: string,
-  ): Promise<{ staffId: string; user: User }> {
+  ): Promise<{ staffId: string; temporaryPassword?: string; user: User }> {
     const res = await fetch(`${API_BASE}/staff`, {
       method: 'POST',
       headers: {
@@ -287,13 +280,14 @@ export const authApi = {
       throw new Error(data.message || 'Error al crear personal');
     }
 
-    const createdStaffId = data.staffProfile?.staffId || data.staffId;
+    const createdStaffId = data.staffId || data.employee?.staffId;
     const roles = payload.roles;
 
     return {
       staffId: createdStaffId,
+      temporaryPassword: data.temporaryPassword,
       user: {
-        id: data.id,
+        id: data.employee?.id || data.id,
         restaurantId: '',
         userType: 'STAFF',
         staffId: createdStaffId,
@@ -304,5 +298,39 @@ export const authApi = {
         mustChangePassword: true,
       },
     };
+  },
+
+  async updateStaffStatus(id: string, isActive: boolean, token: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/staff/${id}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ isActive }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Error al actualizar estado del empleado');
+    }
+  },
+
+  async resetStaffPassword(id: string, token: string): Promise<{ temporaryPassword?: string }> {
+    const res = await fetch(`${API_BASE}/staff/${id}/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({}),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Error al resetear contraseña');
+    }
+
+    return { temporaryPassword: data.temporaryPassword };
   },
 };

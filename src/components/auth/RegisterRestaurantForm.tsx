@@ -34,43 +34,18 @@ export const RegisterRestaurantForm: React.FC<RegisterRestaurantFormProps> = ({ 
     setIsLoading(true);
 
     try {
-      // 1. Intentar llamar al backend real
-      try {
-        const session = await authApi.registerRestaurant({
-          restaurantName,
-          email,
-          password,
-          address: address || undefined,
-        });
-        onSuccess(session);
-        return;
-      } catch (backendErr: unknown) {
-        const msg = backendErr instanceof Error ? backendErr.message : '';
-        if (msg && !msg.includes('Failed to fetch') && !msg.includes('NetworkError')) {
-          setError(msg);
-          setIsLoading(false);
-          return;
-        }
+      const session = await authApi.registerRestaurant({
+        restaurantName,
+        email,
+        password,
+        address: address || undefined,
+      });
+
+      if (managerName.trim()) {
+        session.user.displayName = managerName.trim();
       }
 
-      // 2. Fallback local de desarrollo si el backend no está corriendo
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const fallbackSession: AuthSession = {
-        accessToken: 'mock_jwt_registered_admin_token',
-        user: {
-          id: `usr_${Date.now()}`,
-          restaurantId: `rest_${Date.now()}`,
-          userType: 'ADMIN',
-          email,
-          displayName: managerName || 'Administrador',
-          roleLabel: 'Administrador',
-          permissions: ['*'],
-          mustChangePassword: false,
-        },
-      };
-
-      onSuccess(fallbackSession);
+      onSuccess(session);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al registrar restaurante');
     } finally {
