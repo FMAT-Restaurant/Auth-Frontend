@@ -1,4 +1,5 @@
 import type { User, AuthSession } from '../types/auth';
+import { authStorage } from './authStorage';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:4000/api/v1';
 
@@ -80,6 +81,83 @@ function rolesToPermissions(roles: string[]): string[] {
   return Array.from(perms);
 }
 
+// Control de concurrencia para evitar llamadas duplicadas de refresh token
+let refreshPromise: Promise<string> | null = null;
+
+async function authenticatedFetch(
+  endpoint: string,
+  options: RequestInit = {},
+  fallbackToken?: string,
+): Promise<Response> {
+  const session = authStorage.getSession();
+  const token = fallbackToken || session?.accessToken;
+
+  const buildRequest = (t?: string) => {
+    const headers = new Headers(options.headers || {});
+    if (t) {
+      headers.set('Authorization', `Bearer ${t}`);
+    }
+    return fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  };
+
+  let res = await buildRequest(token);
+
+  // Si el access token expiró (401), intentamos renovarlo transparentemente con el refresh token
+  if (res.status === 401) {
+    const currentSession = authStorage.getSession();
+    const refreshToken = currentSession?.refreshToken;
+
+    if (refreshToken) {
+      try {
+        if (!refreshPromise) {
+          refreshPromise = (async () => {
+            const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken }),
+            });
+
+            if (!refreshRes.ok) {
+              throw new Error('Refresh token inválido o expirado');
+            }
+
+            const refreshData = await refreshRes.json();
+            const newAccessToken: string = refreshData.accessToken;
+            const newRefreshToken: string = refreshData.refreshToken || refreshToken;
+
+            const existing = authStorage.getSession();
+            if (existing) {
+              authStorage.saveSession({
+                ...existing,
+                accessToken: newAccessToken,
+                refreshToken: newRefreshToken,
+              });
+            }
+
+            return newAccessToken;
+          })().finally(() => {
+            refreshPromise = null;
+          });
+        }
+
+        const freshAccessToken = await refreshPromise;
+        res = await buildRequest(freshAccessToken);
+      } catch {
+        authStorage.clearSession();
+        throw new Error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+      }
+    } else {
+      authStorage.clearSession();
+      throw new Error('Tu sesión ha expirado o no es válida. Por favor, inicia sesión nuevamente.');
+    }
+  }
+
+  return res;
+}
+
 export const authApi = {
   getApiBase(): string {
     return API_BASE;
@@ -158,19 +236,40 @@ export const authApi = {
     };
   },
 
+  async refreshSession(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Error al renovar sesión');
+    }
+
+    return {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+    };
+  },
+
   async changeInitialPassword(
     currentPassword: string,
     newPassword: string,
-    token: string,
+    token?: string,
   ): Promise<{ accessToken: string }> {
-    const res = await fetch(`${API_BASE}/auth/change-initial-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+    const res = await authenticatedFetch(
+      '/auth/change-initial-password',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
       },
-      body: JSON.stringify({ currentPassword, newPassword }),
-    });
+      token,
+    );
 
     const data = await res.json();
     if (!res.ok) {
@@ -180,10 +279,8 @@ export const authApi = {
     return { accessToken: data.accessToken };
   },
 
-  async getMe(token: string): Promise<User> {
-    const res = await fetch(`${API_BASE}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  async getMe(token?: string): Promise<User> {
+    const res = await authenticatedFetch('/auth/me', {}, token);
 
     const data = await res.json();
     if (!res.ok) {
@@ -222,16 +319,19 @@ export const authApi = {
 
   async updateProfile(
     payload: { firstName: string; lastName: string; phone?: string },
-    token: string,
+    token?: string,
   ): Promise<{ message: string; user: { id: string; firstName: string; lastName: string; phone?: string; displayName: string } }> {
-    const res = await fetch(`${API_BASE}/auth/profile`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+    const res = await authenticatedFetch(
+      '/auth/profile',
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    });
+      token,
+    );
 
     const data = await res.json();
     if (!res.ok) {
@@ -243,16 +343,19 @@ export const authApi = {
 
   async updateRestaurant(
     payload: { name: string; commercialName?: string; address?: string },
-    token: string,
+    token?: string,
   ): Promise<{ message: string; restaurant: { id: string; name: string; commercialName?: string; address?: string } }> {
-    const res = await fetch(`${API_BASE}/auth/restaurant`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+    const res = await authenticatedFetch(
+      '/auth/restaurant',
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    });
+      token,
+    );
 
     const data = await res.json();
     if (!res.ok) {
@@ -262,13 +365,14 @@ export const authApi = {
     return data;
   },
 
-  async deleteAccount(token: string): Promise<{ message: string }> {
-    const res = await fetch(`${API_BASE}/auth/account`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
+  async deleteAccount(token?: string): Promise<{ message: string }> {
+    const res = await authenticatedFetch(
+      '/auth/account',
+      {
+        method: 'DELETE',
       },
-    });
+      token,
+    );
 
     const data = await res.json();
     if (!res.ok) {
@@ -279,21 +383,21 @@ export const authApi = {
   },
 
   async logout(token?: string): Promise<void> {
-    if (!token) return;
     try {
-      await fetch(`${API_BASE}/auth/logout`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await authenticatedFetch(
+        '/auth/logout',
+        {
+          method: 'POST',
+        },
+        token,
+      );
     } catch {
       // Ignorar errores de red en logout
     }
   },
 
-  async getAllStaff(token: string): Promise<User[]> {
-    const res = await fetch(`${API_BASE}/staff`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  async getAllStaff(token?: string): Promise<User[]> {
+    const res = await authenticatedFetch('/staff', {}, token);
 
     if (!res.ok) {
       const err = await res.json();
@@ -328,16 +432,19 @@ export const authApi = {
       roles: string[];
       initialPassword?: string;
     },
-    token: string,
+    token?: string,
   ): Promise<{ staffId: string; temporaryPassword?: string; user: User }> {
-    const res = await fetch(`${API_BASE}/staff`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+    const res = await authenticatedFetch(
+      '/staff',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    });
+      token,
+    );
 
     const data = await res.json();
     if (!res.ok) {
@@ -364,15 +471,18 @@ export const authApi = {
     };
   },
 
-  async updateStaffStatus(id: string, isActive: boolean, token: string): Promise<void> {
-    const res = await fetch(`${API_BASE}/staff/${id}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+  async updateStaffStatus(id: string, isActive: boolean, token?: string): Promise<void> {
+    const res = await authenticatedFetch(
+      `/staff/${id}/status`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isActive }),
       },
-      body: JSON.stringify({ isActive }),
-    });
+      token,
+    );
 
     if (!res.ok) {
       const err = await res.json();
@@ -380,15 +490,18 @@ export const authApi = {
     }
   },
 
-  async resetStaffPassword(id: string, token: string): Promise<{ temporaryPassword?: string }> {
-    const res = await fetch(`${API_BASE}/staff/${id}/reset-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+  async resetStaffPassword(id: string, token?: string): Promise<{ temporaryPassword?: string }> {
+    const res = await authenticatedFetch(
+      `/staff/${id}/reset-password`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
       },
-      body: JSON.stringify({}),
-    });
+      token,
+    );
 
     const data = await res.json();
     if (!res.ok) {

@@ -92,6 +92,16 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
     document.documentElement.setAttribute('data-theme', theme);
   };
 
+  const getFriendlyErrorMessage = (err: unknown, defaultMessage: string): string => {
+    if (err instanceof Error) {
+      if (err.message === 'Unauthorized' || err.message.toLowerCase().includes('unauthorized')) {
+        return 'Tu sesión ha expirado o no tienes permisos suficientes. Por favor, vuelve a iniciar sesión.';
+      }
+      return err.message;
+    }
+    return defaultMessage;
+  };
+
   // Guardar datos personales
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +137,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
       setTimeout(() => setIsProfileSaved(false), 3500);
     } catch (err: unknown) {
       setProfileErrorMsg(
-        err instanceof Error ? err.message : 'Error al guardar cambios personales',
+        getFriendlyErrorMessage(err, 'Error al guardar cambios personales'),
       );
     } finally {
       setIsUpdatingProfile(false);
@@ -168,7 +178,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
       setTimeout(() => setIsRestaurantSaved(false), 3500);
     } catch (err: unknown) {
       setRestaurantErrorMsg(
-        err instanceof Error ? err.message : 'Error al actualizar el restaurante',
+        getFriendlyErrorMessage(err, 'Error al actualizar el restaurante'),
       );
     } finally {
       setIsUpdatingRestaurant(false);
@@ -193,7 +203,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
       onLogout();
     } catch (err: unknown) {
       setDeleteError(
-        err instanceof Error ? err.message : 'Error al procesar la eliminación de la cuenta',
+        getFriendlyErrorMessage(err, 'Error al procesar la eliminación de la cuenta'),
       );
       setIsDeleting(false);
     }

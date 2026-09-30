@@ -21,6 +21,14 @@ export const App: React.FC = () => {
   useEffect(() => {
     const savedTheme = localStorage.getItem('fmat_theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
+
+    const unsubscribe = authStorage.subscribe((newSession) => {
+      setCurrentSession(newSession);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
