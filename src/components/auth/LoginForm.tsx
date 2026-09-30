@@ -37,19 +37,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
   };
 
-  const fillQuickCredentials = (type: 'admin' | 'staff') => {
-    if (type === 'admin') {
-      setIsStaff(false);
-      setIdentifier('admin@fmat.com');
-      setPassword('Admin123!');
-    } else {
-      setIsStaff(true);
-      setIdentifier('M000001');
-      setPassword('Temp1234!');
-    }
-    setError(null);
-  };
-
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Selector de Modo: Personal vs Gerente */}
@@ -152,47 +139,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       >
         {isStaff ? 'Iniciar Sesión' : 'Acceder al Panel Administrativo'}
       </Button>
-
-      {/* Acceso Rápido para Pruebas / Demos */}
-      <div style={{ marginTop: '4px', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
-        <span style={{ fontSize: '11px', color: 'var(--color-muted)', display: 'block', marginBottom: '6px' }}>
-          Atajos de credenciales (clic para autocompletar):
-        </span>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-          <button
-            type="button"
-            onClick={() => fillQuickCredentials('admin')}
-            style={{
-              padding: '6px 8px',
-              fontSize: '11px',
-              textAlign: 'left',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-canvas)',
-              cursor: 'pointer',
-            }}
-          >
-            <strong>👑 Admin</strong>
-            <span style={{ display: 'block', color: 'var(--color-muted)' }}>admin@fmat.com</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => fillQuickCredentials('staff')}
-            style={{
-              padding: '6px 8px',
-              fontSize: '11px',
-              textAlign: 'left',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-canvas)',
-              cursor: 'pointer',
-            }}
-          >
-            <strong>🧑‍🍳 Personal</strong>
-            <span style={{ display: 'block', color: 'var(--color-muted)' }}>M000001 (Temp)</span>
-          </button>
-        </div>
-      </div>
     </form>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthCard } from './components/auth/AuthCard';
 import { ChangePasswordModal } from './components/auth/ChangePasswordModal';
 import { AppLayout } from './components/layout/AppLayout';
@@ -81,6 +81,10 @@ export const App: React.FC = () => {
     authStorage.clearSession();
   };
 
+  const handleUpdateUser = useCallback((updatedUser: User) => {
+    setCurrentSession((prev) => (prev ? { ...prev, user: updatedUser } : null));
+  }, []);
+
   // 1. Pantalla de Autenticación (si no hay sesión)
   if (!currentSession) {
     return (
@@ -137,9 +141,7 @@ export const App: React.FC = () => {
           <ProfileSettingsView
             currentUser={user}
             token={currentSession.accessToken}
-            onUpdateUser={(updatedUser) => {
-              setCurrentSession((prev) => (prev ? { ...prev, user: updatedUser } : null));
-            }}
+            onUpdateUser={handleUpdateUser}
             onLogout={handleLogout}
           />
         );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
@@ -65,25 +65,50 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Sincronizar datos frescos del usuario desde backend
+  // Referencias para evitar sobreescritura cuando el usuario está editando
+  const isDirtyRef = useRef({
+    firstName: false,
+    lastName: false,
+    phone: false,
+    restaurantName: false,
+    commercialName: false,
+    restaurantAddress: false,
+  });
+
+  const onUpdateUserRef = useRef(onUpdateUser);
   useEffect(() => {
-    if (!token) return;
+    onUpdateUserRef.current = onUpdateUser;
+  });
+
+  const hasLoadedRef = useRef(false);
+
+  // Sincronizar datos frescos del usuario desde backend solo una vez al montar
+  useEffect(() => {
+    if (hasLoadedRef.current || !token) return;
+    hasLoadedRef.current = true;
+
     authApi
       .getMe(token)
       .then((freshUser) => {
-        if (freshUser.firstName) setFirstName(freshUser.firstName);
-        if (freshUser.lastName) setLastName(freshUser.lastName);
-        if (freshUser.phone) setPhone(freshUser.phone);
-        if (freshUser.restaurantName) setRestaurantName(freshUser.restaurantName);
-        if (freshUser.restaurantCommercialName)
-          setCommercialName(freshUser.restaurantCommercialName);
-        if (freshUser.restaurantAddress) setRestaurantAddress(freshUser.restaurantAddress);
-        onUpdateUser(freshUser);
+        if (!isDirtyRef.current.firstName && freshUser.firstName) setFirstName(freshUser.firstName);
+        if (!isDirtyRef.current.lastName && freshUser.lastName) setLastName(freshUser.lastName);
+        if (!isDirtyRef.current.phone && freshUser.phone) setPhone(freshUser.phone);
+        if (!isDirtyRef.current.restaurantName && freshUser.restaurantName) setRestaurantName(freshUser.restaurantName);
+        if (
+          !isDirtyRef.current.commercialName &&
+          (freshUser.restaurantCommercialName || freshUser.restaurantName)
+        ) {
+          setCommercialName(freshUser.restaurantCommercialName || freshUser.restaurantName || '');
+        }
+        if (!isDirtyRef.current.restaurantAddress && freshUser.restaurantAddress) {
+          setRestaurantAddress(freshUser.restaurantAddress);
+        }
+        onUpdateUserRef.current(freshUser);
       })
       .catch(() => {
         // En caso de error de red, se mantienen los valores locales
       });
-  }, [token, onUpdateUser]);
+  }, [token]);
 
   // Manejar cambio de tema
   const handleThemeChange = (theme: 'light' | 'dark') => {
@@ -278,6 +303,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
               label="Nombre"
               value={firstName}
               onChange={(e) => {
+                isDirtyRef.current.firstName = true;
                 setFirstName(e.target.value);
                 setIsProfileSaved(false);
               }}
@@ -288,6 +314,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
               label="Apellidos"
               value={lastName}
               onChange={(e) => {
+                isDirtyRef.current.lastName = true;
                 setLastName(e.target.value);
                 setIsProfileSaved(false);
               }}
@@ -301,6 +328,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
               label="Teléfono / Móvil"
               value={phone}
               onChange={(e) => {
+                isDirtyRef.current.phone = true;
                 setPhone(e.target.value);
                 setIsProfileSaved(false);
               }}
@@ -391,6 +419,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                 label="Nombre Oficial / Razón Social"
                 value={restaurantName}
                 onChange={(e) => {
+                  isDirtyRef.current.restaurantName = true;
                   setRestaurantName(e.target.value);
                   setIsRestaurantSaved(false);
                 }}
@@ -401,6 +430,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                 label="Nombre Comercial"
                 value={commercialName}
                 onChange={(e) => {
+                  isDirtyRef.current.commercialName = true;
                   setCommercialName(e.target.value);
                   setIsRestaurantSaved(false);
                 }}
@@ -412,6 +442,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
               label="Ubicación / Dirección"
               value={restaurantAddress}
               onChange={(e) => {
+                isDirtyRef.current.restaurantAddress = true;
                 setRestaurantAddress(e.target.value);
                 setIsRestaurantSaved(false);
               }}
