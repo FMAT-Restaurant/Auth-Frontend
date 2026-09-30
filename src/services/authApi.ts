@@ -193,18 +193,24 @@ export const authApi = {
     const roleCodes = (data.roles || []).map((r: { code?: string } | string) =>
       typeof r === 'string' ? r : r.code || '',
     );
-    const isStaff = Boolean(data.staffProfile?.staffId);
-    const staffId = data.staffProfile?.staffId || 'ADMIN';
-    const fullName = data.staffProfile
-      ? `${data.staffProfile.firstName} ${data.staffProfile.lastName}`.trim()
-      : data.email || 'Administrador';
+    const isStaff = Boolean(data.staffProfile?.staffId || (data.staffId && data.staffId !== 'ADMIN'));
+    const staffId = data.staffProfile?.staffId || data.staffId || 'ADMIN';
+    const firstName = data.firstName || data.staffProfile?.firstName || '';
+    const lastName = data.lastName || data.staffProfile?.lastName || '';
+    const fullName = `${firstName} ${lastName}`.trim() || data.email || 'Administrador';
 
     return {
       id: data.id,
       restaurantId: data.restaurantId,
+      restaurantName: data.restaurantName,
+      restaurantCommercialName: data.restaurantCommercialName,
+      restaurantAddress: data.restaurantAddress,
       userType: isStaff ? 'STAFF' : 'ADMIN',
       staffId,
       email: data.email,
+      firstName,
+      lastName,
+      phone: data.phone || data.staffProfile?.phone || '',
       displayName: fullName,
       roleLabel: roleCodes.join(', ') || (isStaff ? 'Personal' : 'Administrador'),
       roles: roleCodes,
@@ -212,6 +218,64 @@ export const authApi = {
       permissions: rolesToPermissions(roleCodes),
       mustChangePassword: data.passwordStatus === 'TEMPORARY',
     };
+  },
+
+  async updateProfile(
+    payload: { firstName: string; lastName: string; phone?: string },
+    token: string,
+  ): Promise<{ message: string; user: { id: string; firstName: string; lastName: string; phone?: string; displayName: string } }> {
+    const res = await fetch(`${API_BASE}/auth/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Error al actualizar perfil');
+    }
+
+    return data;
+  },
+
+  async updateRestaurant(
+    payload: { name: string; commercialName?: string; address?: string },
+    token: string,
+  ): Promise<{ message: string; restaurant: { id: string; name: string; commercialName?: string; address?: string } }> {
+    const res = await fetch(`${API_BASE}/auth/restaurant`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Error al actualizar datos del restaurante');
+    }
+
+    return data;
+  },
+
+  async deleteAccount(token: string): Promise<{ message: string }> {
+    const res = await fetch(`${API_BASE}/auth/account`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Error al eliminar la cuenta');
+    }
+
+    return data;
   },
 
   async logout(token?: string): Promise<void> {

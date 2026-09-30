@@ -1,7 +1,7 @@
 import React from 'react';
 import { LoaderIcon } from './Icons';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'destructive';
+export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'destructive' | 'outline' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -70,6 +70,13 @@ export const Button: React.FC<ButtonProps> = ({
         borderColor: 'var(--color-border)',
       },
     },
+    outline: {
+      normal: {
+        backgroundColor: 'var(--color-surface)',
+        color: 'var(--color-text)',
+        borderColor: 'var(--color-border)',
+      },
+    },
     tertiary: {
       normal: {
         backgroundColor: 'transparent',
@@ -78,6 +85,13 @@ export const Button: React.FC<ButtonProps> = ({
       },
     },
     destructive: {
+      normal: {
+        backgroundColor: 'var(--color-error)',
+        color: '#FFFFFF',
+        borderColor: 'var(--color-error)',
+      },
+    },
+    danger: {
       normal: {
         backgroundColor: 'var(--color-error)',
         color: '#FFFFFF',
@@ -98,17 +112,17 @@ export const Button: React.FC<ButtonProps> = ({
       onMouseEnter={(e) => {
         if (!isDisabled) {
           if (variant === 'primary') e.currentTarget.style.backgroundColor = 'var(--color-primary-hover)';
-          if (variant === 'secondary') e.currentTarget.style.backgroundColor = 'var(--color-canvas)';
+          if (variant === 'secondary' || variant === 'outline') e.currentTarget.style.backgroundColor = 'var(--color-canvas)';
           if (variant === 'tertiary') e.currentTarget.style.backgroundColor = 'var(--color-primary-soft)';
-          if (variant === 'destructive') e.currentTarget.style.backgroundColor = '#B91C1C';
+          if (variant === 'destructive' || variant === 'danger') e.currentTarget.style.backgroundColor = '#B91C1C';
         }
       }}
       onMouseLeave={(e) => {
         if (!isDisabled) {
           if (variant === 'primary') e.currentTarget.style.backgroundColor = 'var(--color-primary)';
-          if (variant === 'secondary') e.currentTarget.style.backgroundColor = 'var(--color-surface)';
+          if (variant === 'secondary' || variant === 'outline') e.currentTarget.style.backgroundColor = 'var(--color-surface)';
           if (variant === 'tertiary') e.currentTarget.style.backgroundColor = 'transparent';
-          if (variant === 'destructive') e.currentTarget.style.backgroundColor = 'var(--color-error)';
+          if (variant === 'destructive' || variant === 'danger') e.currentTarget.style.backgroundColor = 'var(--color-error)';
         }
       }}
       {...props}

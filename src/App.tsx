@@ -4,6 +4,7 @@ import { ChangePasswordModal } from './components/auth/ChangePasswordModal';
 import { AppLayout } from './components/layout/AppLayout';
 import { DashboardHomeView } from './components/dashboard/DashboardHomeView';
 import { StaffManagementView } from './components/admin/StaffManagementView';
+import { ProfileSettingsView } from './components/profile/ProfileSettingsView';
 import { ModulePlaceholderView } from './components/layout/ModulePlaceholderView';
 import { authStorage } from './services/authStorage';
 import { authApi } from './services/authApi';
@@ -16,6 +17,11 @@ export const App: React.FC = () => {
   const [tempToken, setTempToken] = useState<string | undefined>(undefined);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [activeModule, setActiveModule] = useState<NavModuleId>('inicio');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('fmat_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }, []);
 
   useEffect(() => {
     if (currentSession) {
@@ -118,6 +124,17 @@ export const App: React.FC = () => {
           );
         }
         return <DashboardHomeView currentUser={user} onNavigate={setActiveModule} />;
+      case 'perfil':
+        return (
+          <ProfileSettingsView
+            currentUser={user}
+            token={currentSession.accessToken}
+            onUpdateUser={(updatedUser) => {
+              setCurrentSession((prev) => (prev ? { ...prev, user: updatedUser } : null));
+            }}
+            onLogout={handleLogout}
+          />
+        );
       case 'inventario':
       case 'sala':
       case 'menu':

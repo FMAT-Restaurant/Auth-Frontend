@@ -11,7 +11,7 @@ import {
 } from '../ui/Icons';
 import type { User } from '../../types/auth';
 
-export type NavModuleId = 'inicio' | 'sala' | 'menu' | 'inventario' | 'ordenes' | 'caja' | 'personal';
+export type NavModuleId = 'inicio' | 'sala' | 'menu' | 'inventario' | 'ordenes' | 'caja' | 'personal' | 'perfil';
 
 interface NavItem {
   id: NavModuleId;
@@ -228,15 +228,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
           gap: '12px',
         }}
       >
-        {/* User Card */}
-        <div
+        {/* User Card / Click to open Perfil & Configuración */}
+        <button
+          type="button"
+          onClick={() => onSelectModule('perfil')}
+          title="Ver perfil y configuración"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            padding: '8px',
+            padding: '8px 10px',
             borderRadius: 'var(--radius-control)',
-            backgroundColor: 'var(--color-canvas)',
+            backgroundColor:
+              activeModule === 'perfil'
+                ? 'var(--color-primary-soft)'
+                : 'var(--color-canvas)',
+            border:
+              activeModule === 'perfil'
+                ? '1px solid var(--color-primary)'
+                : '1px solid var(--color-border)',
+            cursor: 'pointer',
+            textAlign: 'left',
+            width: '100%',
+            transition: 'all 0.15s ease-in-out',
+            outline: 'none',
+          }}
+          onMouseEnter={(e) => {
+            if (activeModule !== 'perfil') {
+              e.currentTarget.style.borderColor = 'var(--color-primary)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeModule !== 'perfil') {
+              e.currentTarget.style.borderColor = 'var(--color-border)';
+            }
           }}
         >
           <div
@@ -244,14 +269,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
               width: '36px',
               height: '36px',
               borderRadius: '50%',
-              backgroundColor: 'var(--color-primary-soft)',
-              color: 'var(--color-primary)',
+              backgroundColor:
+                activeModule === 'perfil'
+                  ? 'var(--color-primary)'
+                  : 'var(--color-primary-soft)',
+              color:
+                activeModule === 'perfil' ? '#FFFFFF' : 'var(--color-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: 700,
               fontSize: '14px',
               flexShrink: 0,
+              transition: 'all 0.15s ease-in-out',
             }}
           >
             {currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'U'}
@@ -262,7 +292,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               style={{
                 fontSize: '13px',
                 fontWeight: 600,
-                color: 'var(--color-ink)',
+                color:
+                  activeModule === 'perfil'
+                    ? 'var(--color-primary)'
+                    : 'var(--color-ink)',
                 display: 'block',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -282,7 +315,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     fontWeight: 600,
                     padding: '1px 5px',
                     borderRadius: '4px',
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: 'var(--color-surface)',
                     border: '1px solid var(--color-border)',
                     color: 'var(--color-primary)',
                     whiteSpace: 'nowrap',
@@ -295,7 +328,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
           </div>
-        </div>
+
+          <div
+            style={{
+              color:
+                activeModule === 'perfil'
+                  ? 'var(--color-primary)'
+                  : 'var(--color-muted)',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <SettingsIcon size={16} />
+          </div>
+        </button>
 
         {/* Reallocated Logout Button */}
         <button
