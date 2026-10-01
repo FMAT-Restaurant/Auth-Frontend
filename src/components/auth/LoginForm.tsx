@@ -103,7 +103,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           onChange={(e) => setIdentifier(e.target.value.toUpperCase())}
           required
           leftIcon={<UserIcon size={18} />}
-          helperText="Código emitido por tu administrador (ej. M000001, H000001)"
         />
       ) : (
         <Input
@@ -114,7 +113,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           onChange={(e) => setIdentifier(e.target.value)}
           required
           leftIcon={<MailIcon size={18} />}
-          helperText="Correo corporativo del dueño o gerente"
         />
       )}
 

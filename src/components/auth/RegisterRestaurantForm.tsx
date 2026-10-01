@@ -62,7 +62,6 @@ export const RegisterRestaurantForm: React.FC<RegisterRestaurantFormProps> = ({ 
         onChange={(e) => setRestaurantName(e.target.value)}
         required
         leftIcon={<BuildingIcon size={18} />}
-        helperText="Nombre comercial del establecimiento"
       />
 
       <Input
@@ -88,7 +87,6 @@ export const RegisterRestaurantForm: React.FC<RegisterRestaurantFormProps> = ({ 
         onChange={(e) => setEmail(e.target.value)}
         required
         leftIcon={<MailIcon size={18} />}
-        helperText="Servirá como cuenta principal de administración"
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
