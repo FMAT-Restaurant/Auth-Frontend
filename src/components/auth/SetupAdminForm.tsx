@@ -80,7 +80,7 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({
             padding: '16px',
             backgroundColor: 'var(--color-primary-soft)',
             borderRadius: 'var(--radius-control)',
-            border: '1px solid #FED7AA',
+            border: '1px solid var(--color-border)',
           }}
         >
           <div
@@ -88,13 +88,13 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--color-surface)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--color-primary)',
               flexShrink: 0,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              boxShadow: 'var(--shadow-card)',
             }}
           >
             <ShieldIcon size={22} />

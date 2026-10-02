@@ -6,6 +6,7 @@ import { DashboardHomeView } from './components/dashboard/DashboardHomeView';
 import { StaffManagementView } from './components/admin/StaffManagementView';
 import { ProfileSettingsView } from './components/profile/ProfileSettingsView';
 import { ModulePlaceholderView } from './components/layout/ModulePlaceholderView';
+import { SunIcon, MoonIcon } from './components/ui/Icons';
 import { authStorage } from './services/authStorage';
 import { authApi } from './services/authApi';
 import type { NavModuleId } from './components/layout/Sidebar';
@@ -13,13 +14,17 @@ import type { User, AuthSession } from './types/auth';
 
 export const App: React.FC = () => {
   const [currentSession, setCurrentSession] = useState<AuthSession | null>(() => authStorage.getSession());
+  const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('fmat_theme') as 'light' | 'dark') || 'light';
+  });
   const [tempUser, setTempUser] = useState<User | null>(null);
   const [tempToken, setTempToken] = useState<string | undefined>(undefined);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [activeModule, setActiveModule] = useState<NavModuleId>('inicio');
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('fmat_theme') || 'light';
+    const savedTheme = (localStorage.getItem('fmat_theme') as 'light' | 'dark') || 'light';
+    setCurrentTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
 
     const unsubscribe = authStorage.subscribe((newSession) => {
@@ -85,6 +90,13 @@ export const App: React.FC = () => {
     setCurrentSession((prev) => (prev ? { ...prev, user: updatedUser } : null));
   }, []);
 
+  const handleToggleTheme = () => {
+    const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    setCurrentTheme(nextTheme);
+    localStorage.setItem('fmat_theme', nextTheme);
+    document.documentElement.setAttribute('data-theme', nextTheme);
+  };
+
   // 1. Pantalla de Autenticación (si no hay sesión)
   if (!currentSession) {
     return (
@@ -92,12 +104,40 @@ export const App: React.FC = () => {
         style={{
           minHeight: '100vh',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '24px 16px',
           backgroundColor: 'var(--color-canvas)',
+          position: 'relative',
         }}
       >
+        {/* Selector de tema flotante en la pantalla de login */}
+        <div style={{ position: 'absolute', top: '24px', right: '24px', zIndex: 10 }}>
+          <button
+            type="button"
+            onClick={handleToggleTheme}
+            aria-label="Alternar modo visual"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 14px',
+              borderRadius: 'var(--radius-control)',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-ink)',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: 'var(--shadow-card)',
+            }}
+          >
+            {currentTheme === 'dark' ? <SunIcon size={16} /> : <MoonIcon size={16} />}
+            <span>{currentTheme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>
+          </button>
+        </div>
+
         <AuthCard
           onLoginSuccess={handleLoginSuccess}
           onRequirePasswordChange={handleRequirePasswordChange}

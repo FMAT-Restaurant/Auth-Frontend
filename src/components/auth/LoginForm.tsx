@@ -47,10 +47,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <div
         style={{
           display: 'flex',
-          backgroundColor: '#F3F4F6',
+          backgroundColor: 'var(--color-surface-elevated)',
           padding: '4px',
           borderRadius: 'var(--radius-control)',
           gap: '4px',
+          border: '1px solid var(--color-border)',
         }}
       >
         <button
@@ -64,12 +65,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             padding: '8px 12px',
             fontSize: '13px',
             fontWeight: isStaff ? 600 : 500,
-            color: isStaff ? 'var(--color-primary)' : 'var(--color-muted)',
-            backgroundColor: isStaff ? '#FFFFFF' : 'transparent',
-            border: 'none',
+            color: isStaff ? 'var(--color-ink)' : 'var(--color-muted)',
+            backgroundColor: isStaff ? 'var(--color-surface)' : 'transparent',
+            border: isStaff ? '1px solid var(--color-border)' : '1px solid transparent',
             borderRadius: 'var(--radius-sm)',
             cursor: 'pointer',
-            boxShadow: isStaff ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+            boxShadow: isStaff ? 'var(--shadow-card)' : 'none',
+            transition: 'all 0.15s ease-in-out',
           }}
         >
           Personal (Staff ID)
@@ -86,12 +88,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             padding: '8px 12px',
             fontSize: '13px',
             fontWeight: !isStaff ? 600 : 500,
-            color: !isStaff ? 'var(--color-primary)' : 'var(--color-muted)',
-            backgroundColor: !isStaff ? '#FFFFFF' : 'transparent',
-            border: 'none',
+            color: !isStaff ? 'var(--color-ink)' : 'var(--color-muted)',
+            backgroundColor: !isStaff ? 'var(--color-surface)' : 'transparent',
+            border: !isStaff ? '1px solid var(--color-border)' : '1px solid transparent',
             borderRadius: 'var(--radius-sm)',
             cursor: 'pointer',
-            boxShadow: !isStaff ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+            boxShadow: !isStaff ? 'var(--shadow-card)' : 'none',
+            transition: 'all 0.15s ease-in-out',
           }}
         >
           Gerente / Admin

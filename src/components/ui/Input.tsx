@@ -56,7 +56,7 @@ export const Input: React.FC<InputProps> = ({
           display: 'flex',
           alignItems: 'center',
           width: '100%',
-          backgroundColor: disabled ? '#F3F4F6' : 'var(--color-surface)',
+          backgroundColor: disabled ? 'var(--color-surface-elevated)' : 'var(--color-surface)',
           borderRadius: 'var(--radius-control)',
           border: `1px solid ${hasError ? 'var(--color-error)' : isFocused ? 'var(--color-primary)' : 'var(--color-border)'}`,
           boxShadow: isFocused ? (hasError ? '0 0 0 1px var(--color-error)' : '0 0 0 1px var(--color-primary)') : 'none',

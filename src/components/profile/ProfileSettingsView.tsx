@@ -439,7 +439,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                 Modo Oscuro
               </div>
               <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-                Descanso visual y consumo reducido en entornos oscuros
+                Obsidian cálido, acentos cobre quemado y alto contraste
               </div>
             </div>
           </button>

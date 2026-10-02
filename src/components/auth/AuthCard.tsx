@@ -50,9 +50,12 @@ export const AuthCard: React.FC<AuthCardProps> = ({
     <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto' }}>
       {/* Brand Header */}
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '26px', color: 'var(--color-ink)', fontWeight: 700 }}>
+        <h1 style={{ fontSize: '26px', color: 'var(--color-ink)', fontWeight: 700, margin: 0 }}>
           FMAT Restaurant
         </h1>
+        <p style={{ fontSize: '14px', color: 'var(--color-muted)', marginTop: '6px', marginBottom: 0 }}>
+          Sistema de Autenticación y Control de Personal
+        </p>
       </div>
 
       {/* Main Card */}
@@ -62,6 +65,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({
           activeTab={activeTab}
           onChange={handleTabChange}
           fullWidth
+          variant="pills"
         />
 
         {activeTab === 'login' ? (
