@@ -118,23 +118,19 @@ export const App: React.FC = () => {
             type="button"
             onClick={handleToggleTheme}
             aria-label="Alternar modo visual"
+            title="Alternar modo visual"
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               padding: '8px 14px',
-              borderRadius: 'var(--radius-control)',
-              border: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-surface)',
               color: 'var(--color-ink)',
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',
-              boxShadow: 'var(--shadow-card)',
             }}
           >
-            {currentTheme === 'dark' ? <SunIcon size={16} /> : <MoonIcon size={16} />}
-            <span>{currentTheme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>
+            {currentTheme === 'dark' ? <SunIcon size={20} /> : <MoonIcon size={20} />}
           </button>
         </div>
 

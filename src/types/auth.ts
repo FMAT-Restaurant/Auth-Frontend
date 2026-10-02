@@ -5,7 +5,6 @@ export interface User {
   email?: string;
   firstName?: string;
   lastName?: string;
-  phone?: string;
   displayName: string;
   roleLabel?: string; // Etiqueta descriptiva libre: ej. "Mesero", "Líder de inventario"
   roles?: string[]; // Roles devueltos por el backend: ["ADMINISTRADOR"], ["MESERO", "HOST"]

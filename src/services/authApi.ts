@@ -34,7 +34,6 @@ export interface BackendStaffItem {
   staffId?: string;
   firstName?: string;
   lastName?: string;
-  phone?: string;
   roles: string[];
   isActive: boolean;
   passwordStatus: string;
@@ -200,12 +199,17 @@ export const authApi = {
     }
 
     const roleCodes: string[] = data.user.roles || [];
-    const isStaff = Boolean(data.user.staffId && data.user.staffId !== 'ADMIN');
+    const isAdmin = Boolean(
+      data.user.userType === 'ADMIN' ||
+      roleCodes.includes('ADMINISTRADOR') ||
+      (data.user.email && (!data.user.staffId || data.user.staffId === 'ADMIN' || data.user.staffId.startsWith('ADM')))
+    );
+    const isStaff = !isAdmin;
     const permissions = rolesToPermissions(roleCodes);
 
     const user: User = {
       id: data.user.id,
-      userType: isStaff ? 'STAFF' : 'ADMIN',
+      userType: isAdmin ? 'ADMIN' : 'STAFF',
       staffId: data.user.staffId,
       email: data.user.email,
       displayName: isStaff ? `Colaborador ${data.user.staffId}` : 'Gerente General',
@@ -317,20 +321,24 @@ export const authApi = {
     const roleCodes = (data.roles || []).map((r: { code?: string } | string) =>
       typeof r === 'string' ? r : r.code || '',
     );
-    const isStaff = Boolean(data.staffProfile?.staffId || (data.staffId && data.staffId !== 'ADMIN'));
-    const staffId = data.staffProfile?.staffId || data.staffId || 'ADMIN';
+    const isAdmin = Boolean(
+      data.userType === 'ADMIN' ||
+      roleCodes.includes('ADMINISTRADOR') ||
+      (data.email && (!data.staffProfile?.staffId || data.staffProfile?.staffId === 'ADMIN' || data.staffProfile?.staffId.startsWith('ADM')))
+    );
+    const isStaff = !isAdmin;
+    const staffId = data.staffProfile?.staffId || data.staffId || (isAdmin ? 'ADMIN' : 'E000000');
     const firstName = data.firstName || data.staffProfile?.firstName || '';
     const lastName = data.lastName || data.staffProfile?.lastName || '';
-    const fullName = `${firstName} ${lastName}`.trim() || data.email || 'Administrador';
+    const fullName = `${firstName} ${lastName}`.trim() || data.email || (isAdmin ? 'Administrador' : 'Colaborador');
 
     return {
       id: data.id,
-      userType: isStaff ? 'STAFF' : 'ADMIN',
+      userType: isAdmin ? 'ADMIN' : 'STAFF',
       staffId,
       email: data.email,
       firstName,
       lastName,
-      phone: data.phone || data.staffProfile?.phone || '',
       displayName: fullName,
       roleLabel: roleCodes.join(', ') || (isStaff ? 'Personal' : 'Administrador'),
       roles: roleCodes,
@@ -341,9 +349,9 @@ export const authApi = {
   },
 
   async updateProfile(
-    payload: { firstName: string; lastName: string; phone?: string },
+    payload: { firstName: string; lastName: string },
     token?: string,
-  ): Promise<{ message: string; user: { id: string; firstName: string; lastName: string; phone?: string; displayName: string } }> {
+  ): Promise<{ message: string; user: { id: string; firstName: string; lastName: string; displayName: string } }> {
     const res = await authenticatedFetch(
       '/auth/profile',
       {
@@ -426,7 +434,6 @@ export const authApi = {
     payload: {
       firstName: string;
       lastName: string;
-      phone?: string;
       roles: string[];
       initialPassword?: string;
     },

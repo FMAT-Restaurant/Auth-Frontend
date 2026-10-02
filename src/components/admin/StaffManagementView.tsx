@@ -26,7 +26,6 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['MESERO']);
   const [tempPassword, setTempPassword] = useState('Temp1234!');
 
@@ -79,7 +78,6 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
         {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
-          phone: phone.trim() || undefined,
           roles: selectedRoles,
           initialPassword: tempPassword.trim() || undefined,
         },
@@ -96,7 +94,6 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
       setShowCreateForm(false);
       setFirstName('');
       setLastName('');
-      setPhone('');
       setSelectedRoles(['MESERO']);
       setTempPassword('Temp1234!');
     } catch (err: unknown) {
@@ -217,12 +214,6 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
-              />
-              <Input
-                label="Teléfono (opcional)"
-                placeholder="Ej. 9991234567"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
               />
             </div>
 

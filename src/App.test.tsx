@@ -6,9 +6,6 @@ describe('App Component', () => {
   it('renders the login header correctly', () => {
     render(<App />);
     expect(screen.getByText('FMAT Restaurant')).toBeInTheDocument();
-    expect(
-      screen.getByText('Sistema de Autenticación y Control de Personal'),
-    ).toBeInTheDocument();
   });
 
   it('allows toggling between Personal and Gerente modes', () => {

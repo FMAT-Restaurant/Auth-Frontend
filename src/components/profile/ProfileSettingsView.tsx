@@ -29,7 +29,10 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   onUpdateUser,
   onLogout,
 }) => {
-  const isAdmin = currentUser.userType === 'ADMIN';
+  const isAdmin =
+    currentUser.userType === 'ADMIN' ||
+    (currentUser.roles && currentUser.roles.includes('ADMINISTRADOR')) ||
+    (currentUser.roleLabel && currentUser.roleLabel.toLowerCase().includes('admin'));
 
   // Estado de Datos Personales
   const [firstName, setFirstName] = useState(
@@ -38,7 +41,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   const [lastName, setLastName] = useState(
     currentUser.lastName || currentUser.displayName.split(' ').slice(1).join(' ') || '',
   );
-  const [phone, setPhone] = useState(currentUser.phone || '');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isProfileSaved, setIsProfileSaved] = useState(false);
   const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
@@ -58,7 +60,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   const isDirtyRef = useRef({
     firstName: false,
     lastName: false,
-    phone: false,
   });
 
   const onUpdateUserRef = useRef(onUpdateUser);
@@ -78,7 +79,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
       .then((freshUser) => {
         if (!isDirtyRef.current.firstName && freshUser.firstName) setFirstName(freshUser.firstName);
         if (!isDirtyRef.current.lastName && freshUser.lastName) setLastName(freshUser.lastName);
-        if (!isDirtyRef.current.phone && freshUser.phone) setPhone(freshUser.phone);
         onUpdateUserRef.current(freshUser);
       })
       .catch(() => {
@@ -125,7 +125,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
         {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
-          phone: phone.trim() || undefined,
         },
         token,
       );
@@ -134,7 +133,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
         ...currentUser,
         firstName: res.user.firstName,
         lastName: res.user.lastName,
-        phone: res.user.phone,
         displayName: res.user.displayName,
       };
 
@@ -288,18 +286,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
             />
           </div>
 
-          <div className="fmat-grid-2">
-            <Input
-              label="Teléfono / Móvil"
-              value={phone}
-              onChange={(e) => {
-                isDirtyRef.current.phone = true;
-                setPhone(e.target.value);
-                setIsProfileSaved(false);
-              }}
-              placeholder="Ej. +52 999 123 4567"
-              disabled={!isAdmin}
-            />
+          <div>
             <Input
               label="Correo electrónico / Identificador"
               value={currentUser.email || currentUser.staffId || ''}
