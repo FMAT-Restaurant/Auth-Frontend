@@ -35,6 +35,7 @@ export interface BackendStaffItem {
   firstName?: string;
   lastName?: string;
   roles: string[];
+  permissions?: string[];
   isActive: boolean;
   passwordStatus: string;
   temporaryPassword?: string | null;
@@ -206,7 +207,10 @@ export const authApi = {
       (data.user.email && (!data.user.staffId || data.user.staffId === 'ADMIN' || data.user.staffId.startsWith('ADM')))
     );
     const isStaff = !isAdmin;
-    const permissions = rolesToPermissions(roleCodes);
+    const permissions =
+      data.user?.permissions && data.user.permissions.length > 0
+        ? data.user.permissions
+        : rolesToPermissions(roleCodes);
 
     const user: User = {
       id: data.user.id,
@@ -344,7 +348,10 @@ export const authApi = {
       roleLabel: roleCodes.join(', ') || (isStaff ? 'Personal' : 'Administrador'),
       roles: roleCodes,
       views: data.views,
-      permissions: rolesToPermissions(roleCodes),
+      permissions:
+        data.permissions && data.permissions.length > 0
+          ? data.permissions
+          : rolesToPermissions(roleCodes),
       mustChangePassword: data.passwordStatus === 'TEMPORARY',
     };
   },
@@ -427,7 +434,10 @@ export const authApi = {
         lastName: item.lastName,
         roleLabel: roles.join(', '),
         roles,
-        permissions: rolesToPermissions(roles),
+        permissions:
+          item.permissions && item.permissions.length > 0
+            ? item.permissions
+            : rolesToPermissions(roles),
         isActive: item.isActive,
         passwordStatus: item.passwordStatus as 'TEMPORARY' | 'ACTIVE',
         temporaryPassword: item.temporaryPassword,
@@ -468,7 +478,10 @@ export const authApi = {
       displayName: `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Colaborador',
       roleLabel: roles.join(', '),
       roles,
-      permissions: rolesToPermissions(roles),
+      permissions:
+        data.permissions && data.permissions.length > 0
+          ? data.permissions
+          : rolesToPermissions(roles),
       isActive: data.isActive,
       passwordStatus: data.passwordStatus,
       temporaryPassword: data.temporaryPassword,
@@ -534,7 +547,10 @@ export const authApi = {
         lastName: payload.lastName,
         roleLabel: roles.join(', '),
         roles,
-        permissions: rolesToPermissions(roles),
+        permissions:
+          data.employee?.permissions && data.employee.permissions.length > 0
+            ? data.employee.permissions
+            : rolesToPermissions(roles),
         isActive: true,
         passwordStatus: 'TEMPORARY',
         temporaryPassword: data.temporaryPassword,

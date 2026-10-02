@@ -107,20 +107,45 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
     try {
       let finalRoles = [...selectedRoles];
 
-      // Si el admin personalizó permisos y marcó "Guardar Rol como..."
-      if (isCustomizingPermissions && saveRoleAsNew && newRoleName.trim()) {
+      // Si el admin personalizó permisos directamente
+      if (isCustomizingPermissions) {
         if (customPermissions.length === 0) {
-          throw new Error('Debes seleccionar al menos un permiso para el nuevo rol');
+          throw new Error('Debes seleccionar al menos un permiso para el colaborador');
         }
-        const createdRole = await authApi.createRole(
-          {
-            name: newRoleName.trim(),
-            description: `Rol personalizado para ${firstName.trim()} ${lastName.trim()}`,
-            permissions: customPermissions,
-          },
-          token,
+        if (saveRoleAsNew && !newRoleName.trim()) {
+          throw new Error('Debes ingresar un nombre para guardar el nuevo rol');
+        }
+        const roleName =
+          saveRoleAsNew && newRoleName.trim()
+            ? newRoleName.trim()
+            : `Personalizado ${firstName.trim()} ${lastName.trim()}`.trim();
+        const existingMatch = rolesList.find(
+          (r) => r.name.toLowerCase() === roleName.toLowerCase() || r.code.toLowerCase() === roleName.toLowerCase(),
         );
-        finalRoles = [createdRole.code];
+        if (existingMatch) {
+          finalRoles = [existingMatch.code];
+        } else {
+          try {
+            const createdRole = await authApi.createRole(
+              {
+                name: roleName,
+                description: `Rol asignado a ${firstName.trim()} ${lastName.trim()}`,
+                permissions: customPermissions,
+              },
+              token,
+            );
+            finalRoles = [createdRole.code];
+          } catch (createRoleErr: unknown) {
+            const fallbackMatch = rolesList.find(
+              (r) => r.name.toLowerCase() === roleName.toLowerCase() || r.code.toLowerCase() === roleName.toLowerCase(),
+            );
+            if (fallbackMatch) {
+              finalRoles = [fallbackMatch.code];
+            } else {
+              throw createRoleErr;
+            }
+          }
+        }
       }
 
       const result = await authApi.createStaff(
