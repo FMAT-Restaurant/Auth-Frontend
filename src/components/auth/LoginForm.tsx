@@ -24,7 +24,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setIsLoading(true);
 
     try {
-      const session = await authApi.login(identifier, password);
+      const cleanIdentifier = isStaff ? identifier.trim().toUpperCase() : identifier.trim();
+      const cleanPassword = password.trim();
+      const session = await authApi.login(cleanIdentifier, cleanPassword);
       if (session.user.mustChangePassword) {
         onRequirePasswordChange(session.user);
       } else {
@@ -188,9 +190,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           role="alert"
           style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
+            alignItems: 'flex-start',
+            gap: '10px',
             padding: '10px 12px',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
             color: 'var(--color-error)',
             borderRadius: 'var(--radius-control)',
             fontSize: '13px',
@@ -198,8 +202,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             lineHeight: 1.4,
           }}
         >
-          <AlertCircleIcon size={18} style={{ flexShrink: 0 }} />
-          <span>{error}</span>
+          <AlertCircleIcon size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <span>{error}</span>
+            {isStaff && (
+              <span style={{ fontSize: '11px', opacity: 0.9, fontWeight: 400 }}>
+                💡 Tip: Comprueba que tu Staff ID esté completo (ej. M000001) y que la contraseña temporal sea idéntica a la que generó el administrador (respetando mayúsculas, minúsculas y caracteres especiales).
+              </span>
+            )}
+          </div>
         </div>
       )}
 

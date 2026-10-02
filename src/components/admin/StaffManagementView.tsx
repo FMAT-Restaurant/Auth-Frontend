@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Input, Tabs, type TabItem } from '../ui';
+import { Card, Button, Input, Tabs, Modal, CheckIcon, CopyIcon, type TabItem } from '../ui';
 import { authApi } from '../../services/authApi';
 import { StaffDetailDrawer } from './StaffDetailDrawer';
 import { RolesManagementView } from './RolesManagementView';
@@ -38,6 +38,15 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
   const [customPermissions, setCustomPermissions] = useState<string[]>([]);
   const [saveRoleAsNew, setSaveRoleAsNew] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
+
+  // Modal de credenciales generadas para el nuevo colaborador
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    staffId: string;
+    fullName: string;
+    temporaryPassword?: string;
+  } | null>(null);
+  const [isCopiedId, setIsCopiedId] = useState(false);
+  const [isCopiedTemp, setIsCopiedTemp] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!token) {
@@ -126,6 +135,12 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
       setSuccessBanner(
         `¡Colaborador creado exitosamente! Staff ID: ${result.staffId} | Contraseña temporal: ${result.temporaryPassword}`,
       );
+
+      setCreatedCredentials({
+        staffId: result.staffId,
+        fullName: `${firstName.trim()} ${lastName.trim()}`,
+        temporaryPassword: result.temporaryPassword,
+      });
 
       // Recargar lista
       await loadData();
@@ -583,6 +598,99 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
         onResetPassword={handleResetCollaboratorPassword}
         onDelete={handleDeleteCollaborator}
       />
+
+      {/* Modal de Confirmación de Credenciales Generadas */}
+      <Modal
+        isOpen={Boolean(createdCredentials)}
+        onClose={() => setCreatedCredentials(null)}
+        title="¡Colaborador Registrado Exitosamente!"
+        description="Credenciales de acceso provisionales para el nuevo colaborador."
+        maxWidth="480px"
+        footer={
+          <Button
+            variant="primary"
+            size="md"
+            fullWidth
+            onClick={() => setCreatedCredentials(null)}
+          >
+            Entendido
+          </Button>
+        }
+      >
+        {createdCredentials && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0, lineHeight: 1.5 }}>
+              Proporciona estas credenciales a <strong>{createdCredentials.fullName}</strong>. En su primer inicio de sesión, el sistema le solicitará cambiar su contraseña obligatoriamente.
+            </p>
+
+            <div
+              style={{
+                backgroundColor: 'var(--color-surface-elevated)',
+                borderRadius: 'var(--radius-control)',
+                border: '1px solid var(--color-border)',
+                padding: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase' }}>
+                  Staff ID (Usuario para Login)
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                  <code style={{ fontSize: '17px', fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'monospace' }}>
+                    {createdCredentials.staffId}
+                  </code>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdCredentials.staffId);
+                      setIsCopiedId(true);
+                      setTimeout(() => setIsCopiedId(false), 2000);
+                    }}
+                    style={{ gap: '6px' }}
+                  >
+                    {isCopiedId ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+                    <span>{isCopiedId ? '¡Copiado!' : 'Copiar ID'}</span>
+                  </Button>
+                </div>
+              </div>
+
+              {createdCredentials.temporaryPassword && (
+                <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '10px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase' }}>
+                    Contraseña Temporal Inicial
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                    <code style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)', letterSpacing: '0.5px' }}>
+                      {createdCredentials.temporaryPassword}
+                    </code>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (createdCredentials.temporaryPassword) {
+                          navigator.clipboard.writeText(createdCredentials.temporaryPassword);
+                          setIsCopiedTemp(true);
+                          setTimeout(() => setIsCopiedTemp(false), 2000);
+                        }
+                      }}
+                      style={{ gap: '6px' }}
+                    >
+                      {isCopiedTemp ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+                      <span>{isCopiedTemp ? '¡Copiada!' : 'Copiar clave'}</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
