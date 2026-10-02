@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Input, Button, LockIcon, ShieldIcon, AlertCircleIcon } from '../ui';
 import { authApi } from '../../services/authApi';
+import { authStorage } from '../../services/authStorage';
 import type { User } from '../../types/auth';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
   user: User | null;
   token?: string;
+  initialCurrentPassword?: string;
   onSuccess: (newToken?: string) => void;
   onCancel: () => void;
 }
@@ -15,43 +17,56 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   isOpen,
   user,
   token,
+  initialCurrentPassword,
   onSuccess,
   onCancel,
 }) => {
-  const [currentPassword, setCurrentPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState(initialCurrentPassword || '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    if (initialCurrentPassword) {
+      setCurrentPassword(initialCurrentPassword);
+    }
+  }, [initialCurrentPassword]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (newPassword.length < 6) {
+    const cleanCurrent = currentPassword.trim();
+    const cleanNew = newPassword.trim();
+    const cleanConfirm = confirmPassword.trim();
+
+    if (cleanNew.length < 6) {
       setError('La nueva contraseña debe tener al menos 6 caracteres');
       return;
     }
 
-    if (newPassword === currentPassword) {
+    if (cleanNew === cleanCurrent) {
       setError('La nueva contraseña no puede ser igual a la clave temporal');
       return;
     }
 
-    if (newPassword !== confirmPassword) {
+    if (cleanNew !== cleanConfirm) {
       setError('Las nuevas contraseñas no coinciden');
       return;
     }
 
-    if (!token) {
-      setError('No se encontró token de sesión activa');
+    const activeToken = token || authStorage.getSession()?.accessToken;
+
+    if (!activeToken) {
+      setError('No se encontró el token de sesión activa. Por favor, vuelve a iniciar sesión.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const res = await authApi.changeInitialPassword(currentPassword, newPassword, token);
+      const res = await authApi.changeInitialPassword(cleanCurrent, cleanNew, activeToken);
       onSuccess(res.accessToken);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al actualizar contraseña');

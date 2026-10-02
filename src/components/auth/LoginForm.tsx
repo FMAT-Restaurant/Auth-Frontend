@@ -5,7 +5,7 @@ import type { User, AuthSession } from '../../types/auth';
 
 interface LoginFormProps {
   onSuccess: (session: AuthSession) => void;
-  onRequirePasswordChange: (tempUser: User) => void;
+  onRequirePasswordChange: (tempUser: User, token?: string, currentPassword?: string) => void;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
@@ -28,7 +28,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       const cleanPassword = password.trim();
       const session = await authApi.login(cleanIdentifier, cleanPassword);
       if (session.user.mustChangePassword) {
-        onRequirePasswordChange(session.user);
+        onRequirePasswordChange(session.user, session.accessToken, cleanPassword);
       } else {
         onSuccess(session);
       }

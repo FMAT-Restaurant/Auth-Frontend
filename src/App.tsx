@@ -19,6 +19,7 @@ export const App: React.FC = () => {
   });
   const [tempUser, setTempUser] = useState<User | null>(null);
   const [tempToken, setTempToken] = useState<string | undefined>(undefined);
+  const [tempInitialPassword, setTempInitialPassword] = useState<string | undefined>(undefined);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [activeModule, setActiveModule] = useState<NavModuleId>('inicio');
 
@@ -49,10 +50,10 @@ export const App: React.FC = () => {
     setActiveModule('inicio');
   };
 
-  const handleRequirePasswordChange = (user: User) => {
+  const handleRequirePasswordChange = (user: User, token?: string, currentPassword?: string) => {
     setTempUser(user);
-    // Guardamos el token temporal si existía en la sesión
-    setTempToken(currentSession?.accessToken);
+    setTempToken(token || currentSession?.accessToken);
+    setTempInitialPassword(currentPassword);
     setIsChangePasswordOpen(true);
   };
 
@@ -62,15 +63,18 @@ export const App: React.FC = () => {
         ...tempUser,
         mustChangePassword: false,
       };
+      const resolvedToken = newToken || tempToken || currentSession?.accessToken || 'mock_jwt_activated_token';
       const newSession: AuthSession = {
-        accessToken: newToken || currentSession?.accessToken || 'mock_jwt_activated_token',
+        accessToken: resolvedToken,
         user: activeUser,
       };
+      authStorage.saveSession(newSession);
       setCurrentSession(newSession);
     }
     setIsChangePasswordOpen(false);
     setTempUser(null);
     setTempToken(undefined);
+    setTempInitialPassword(undefined);
     setActiveModule('inicio');
   };
 
@@ -143,11 +147,13 @@ export const App: React.FC = () => {
           isOpen={isChangePasswordOpen}
           user={tempUser}
           token={tempToken}
+          initialCurrentPassword={tempInitialPassword}
           onSuccess={handlePasswordChangeSuccess}
           onCancel={() => {
             setIsChangePasswordOpen(false);
             setTempUser(null);
             setTempToken(undefined);
+            setTempInitialPassword(undefined);
           }}
         />
       </div>

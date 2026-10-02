@@ -7,7 +7,7 @@ import type { User, AuthSession } from '../../types/auth';
 
 interface AuthCardProps {
   onLoginSuccess: (session: AuthSession) => void;
-  onRequirePasswordChange: (tempUser: User) => void;
+  onRequirePasswordChange: (tempUser: User, token?: string, currentPassword?: string) => void;
 }
 
 export const AuthCard: React.FC<AuthCardProps> = ({
