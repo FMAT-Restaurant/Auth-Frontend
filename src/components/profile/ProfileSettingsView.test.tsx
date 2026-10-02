@@ -63,6 +63,8 @@ describe('ProfileSettingsView Component', () => {
     expect(screen.getByPlaceholderText('Ej. Roberto')).toBeDisabled();
     expect(screen.getByPlaceholderText('Ej. Castro')).toBeDisabled();
     expect(screen.queryByText('Guardar cambios personales')).not.toBeInTheDocument();
+    expect(screen.queryByText('Zona de Peligro')).not.toBeInTheDocument();
+    expect(screen.queryByText('Eliminar mi cuenta')).not.toBeInTheDocument();
   });
 
   it('allows toggling dark mode and persists in document and localStorage', () => {

@@ -433,113 +433,117 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
         </div>
       </Card>
 
-      {/* SECCIÓN 3: ZONA DE PELIGRO (DANGER ZONE) */}
-      <Card
-        padding="lg"
-        style={{
-          border: '1px solid var(--color-error)',
-          backgroundColor: 'var(--color-error-bg)',
-        }}
-      >
-        <div className="fmat-danger-header">
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <ShieldIcon size={20} color="var(--color-error)" />
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-error)', margin: 0 }}>
-                Zona de Peligro
-              </h2>
-            </div>
-            <p style={{ fontSize: '13px', color: 'var(--color-text)', margin: 0, maxWidth: '560px', lineHeight: 1.5 }}>
-              Eliminar tu cuenta operativa revocará tus accesos y credenciales. Esta acción es irreversible.
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            variant="destructive"
-            leftIcon={<TrashIcon size={16} />}
-            onClick={() => {
-              setDeleteConfirmInput('');
-              setDeleteError(null);
-              setIsDeleteModalOpen(true);
-            }}
-            style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-          >
-            Eliminar mi cuenta
-          </Button>
-        </div>
-      </Card>
-
-      {/* MODAL DE CONFIRMACIÓN DESTRUTIVA */}
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        title="¿Eliminar cuenta de usuario definitivamente?"
-        description="Esta acción es completamente irreversible y eliminará todos los registros asociados en la base de datos."
-        footer={
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', width: '100%', flexWrap: 'wrap' }}>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsDeleteModalOpen(false)}
-              disabled={isDeleting}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              leftIcon={isDeleting ? <LoaderIcon size={16} /> : <TrashIcon size={16} />}
-              onClick={handleConfirmDelete}
-              isLoading={isDeleting}
-              disabled={deleteConfirmInput.trim().toUpperCase() !== 'ELIMINAR'}
-            >
-              Confirmar y eliminar
-            </Button>
-          </div>
-        }
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '8px 0' }}>
-          <div
+      {/* SECCIÓN 3: ZONA DE PELIGRO (DANGER ZONE) - SOLO DISPONIBLE PARA EL ADMINISTRADOR */}
+      {isAdmin && (
+        <>
+          <Card
+            padding="lg"
             style={{
-              padding: '12px 14px',
-              backgroundColor: 'var(--color-error-bg)',
-              borderRadius: 'var(--radius-control)',
               border: '1px solid var(--color-error)',
-              fontSize: '13px',
-              color: 'var(--color-error)',
-              lineHeight: 1.5,
+              backgroundColor: 'var(--color-error-bg)',
             }}
           >
-            <strong>Advertencia crítica:</strong> Se eliminarán todos los datos de la base de datos registrados a esta cuenta.
-            Para confirmar, escribe <strong>ELIMINAR</strong> en el siguiente campo:
-          </div>
+            <div className="fmat-danger-header">
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <ShieldIcon size={20} color="var(--color-error)" />
+                  <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-error)', margin: 0 }}>
+                    Zona de Peligro
+                  </h2>
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--color-text)', margin: 0, maxWidth: '560px', lineHeight: 1.5 }}>
+                  Eliminar la cuenta revocará accesos y credenciales. Esta acción es irreversible.
+                </p>
+              </div>
 
-          {deleteError && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                color: 'var(--color-error)',
-                fontSize: '13px',
-                fontWeight: 600,
-              }}
-            >
-              <AlertCircleIcon size={16} />
-              <span>{deleteError}</span>
+              <Button
+                type="button"
+                variant="destructive"
+                leftIcon={<TrashIcon size={16} />}
+                onClick={() => {
+                  setDeleteConfirmInput('');
+                  setDeleteError(null);
+                  setIsDeleteModalOpen(true);
+                }}
+                style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+              >
+                Eliminar mi cuenta
+              </Button>
             </div>
-          )}
+          </Card>
 
-          <Input
-            label='Escribe "ELIMINAR" para confirmar'
-            value={deleteConfirmInput}
-            onChange={(e) => setDeleteConfirmInput(e.target.value)}
-            placeholder="ELIMINAR"
-            autoFocus
-          />
-        </div>
-      </Modal>
+          {/* MODAL DE CONFIRMACIÓN DESTRUCTIVA */}
+          <Modal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            title="¿Eliminar cuenta de usuario definitivamente?"
+            description="Esta acción es completamente irreversible y eliminará todos los registros asociados en la base de datos."
+            footer={
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', width: '100%', flexWrap: 'wrap' }}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  disabled={isDeleting}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  leftIcon={isDeleting ? <LoaderIcon size={16} /> : <TrashIcon size={16} />}
+                  onClick={handleConfirmDelete}
+                  isLoading={isDeleting}
+                  disabled={deleteConfirmInput.trim().toUpperCase() !== 'ELIMINAR'}
+                >
+                  Confirmar y eliminar
+                </Button>
+              </div>
+            }
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '8px 0' }}>
+              <div
+                style={{
+                  padding: '12px 14px',
+                  backgroundColor: 'var(--color-error-bg)',
+                  borderRadius: 'var(--radius-control)',
+                  border: '1px solid var(--color-error)',
+                  fontSize: '13px',
+                  color: 'var(--color-error)',
+                  lineHeight: 1.5,
+                }}
+              >
+                <strong>Advertencia crítica:</strong> Se eliminarán todos los datos de la base de datos registrados a esta cuenta.
+                Para confirmar, escribe <strong>ELIMINAR</strong> en el siguiente campo:
+              </div>
+
+              {deleteError && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    color: 'var(--color-error)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  <AlertCircleIcon size={16} />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+
+              <Input
+                label='Escribe "ELIMINAR" para confirmar'
+                value={deleteConfirmInput}
+                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                placeholder="ELIMINAR"
+                autoFocus
+              />
+            </div>
+          </Modal>
+        </>
+      )}
     </div>
   );
 };
