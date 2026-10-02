@@ -200,7 +200,6 @@ export const authApi = {
     password: string;
     firstName?: string;
     lastName?: string;
-    phone?: string;
   }): Promise<AuthSession> {
     const res = await fetch(`${API_BASE}/auth/setup-admin`, {
       method: 'POST',
