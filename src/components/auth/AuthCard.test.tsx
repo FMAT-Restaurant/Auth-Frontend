@@ -7,15 +7,17 @@ vi.mock('../../services/authApi', () => ({
   authApi: {
     login: vi.fn(),
     setupAdmin: vi.fn(),
+    getSetupStatus: vi.fn().mockResolvedValue({ configured: false }),
   },
 }));
 
-describe('AuthCard Component - Error Presentation', () => {
+describe('AuthCard Component - Error Presentation & Setup Status UX', () => {
   const mockOnLoginSuccess = vi.fn();
   const mockOnRequirePasswordChange = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(authApi.getSetupStatus).mockResolvedValue({ configured: false });
   });
 
   describe('LoginForm', () => {
@@ -84,10 +86,60 @@ describe('AuthCard Component - Error Presentation', () => {
     });
   });
 
-  describe('SetupAdminForm', () => {
+  describe('SetupAdminForm - Configured State UX', () => {
+    it('displays informational view with solutions when admin is already configured', async () => {
+      vi.mocked(authApi.getSetupStatus).mockResolvedValue({ configured: true });
+
+      render(
+        <AuthCard
+          onLoginSuccess={mockOnLoginSuccess}
+          onRequirePasswordChange={mockOnRequirePasswordChange}
+        />,
+      );
+
+      const setupTab = screen.getByRole('tab', { name: /Registrar Admin/i });
+      fireEvent.click(setupTab);
+
+      await waitFor(() => {
+        expect(screen.getByText('Ya se configuró un administrador')).toBeInTheDocument();
+      });
+
+      // Form inputs should NOT be visible
+      expect(screen.queryByLabelText(/Correo electrónico del Administrador/i)).not.toBeInTheDocument();
+
+      // Solutions should be present
+      expect(screen.getByText('¿Ya eres el Administrador?')).toBeInTheDocument();
+      expect(screen.getByText(/¿Olvidaste tu acceso o necesitas reconfigurar el sistema\?/i)).toBeInTheDocument();
+      expect(screen.getByText(/¿Eres Personal Operativo \(Staff\)\?/i)).toBeInTheDocument();
+
+      // Clicking "Ir a Iniciar Sesión" switches to login tab
+      const goToLoginBtn = screen.getByRole('button', { name: /Ir a Iniciar Sesión/i });
+      fireEvent.click(goToLoginBtn);
+
+      expect(screen.getByLabelText(/Staff ID/i)).toBeInTheDocument();
+    });
+
+    it('displays registration form when admin is NOT yet configured', async () => {
+      vi.mocked(authApi.getSetupStatus).mockResolvedValue({ configured: false });
+
+      render(
+        <AuthCard
+          onLoginSuccess={mockOnLoginSuccess}
+          onRequirePasswordChange={mockOnRequirePasswordChange}
+        />,
+      );
+
+      const setupTab = screen.getByRole('tab', { name: /Registrar Admin/i });
+      fireEvent.click(setupTab);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Correo electrónico del Administrador/i)).toBeInTheDocument();
+      });
+    });
+
     it('displays backend error message in alert banner above submit button when setup fails', async () => {
       vi.mocked(authApi.setupAdmin).mockRejectedValueOnce(
-        new Error('El administrador principal ya ha sido configurado previamente'),
+        new Error('Error de validación del servidor'),
       );
 
       const { container } = render(
@@ -100,6 +152,10 @@ describe('AuthCard Component - Error Presentation', () => {
       // Switch to setup tab
       const setupTab = screen.getByRole('tab', { name: /Registrar Admin/i });
       fireEvent.click(setupTab);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Correo electrónico del Administrador/i)).toBeInTheDocument();
+      });
 
       const firstNameInput = screen.getByLabelText(/Nombre\(s\)/i);
       const lastNameInput = screen.getByLabelText(/Apellidos/i);
@@ -120,10 +176,9 @@ describe('AuthCard Component - Error Presentation', () => {
       await waitFor(() => {
         const alert = screen.getByRole('alert');
         expect(alert).toBeInTheDocument();
-        expect(alert).toHaveTextContent('El administrador principal ya ha sido configurado previamente');
+        expect(alert).toHaveTextContent('Error de validación del servidor');
       });
 
-      // Confirm alert is before the button
       const alert = screen.getByRole('alert');
       expect(alert.compareDocumentPosition(submitBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
@@ -138,6 +193,10 @@ describe('AuthCard Component - Error Presentation', () => {
 
       const setupTab = screen.getByRole('tab', { name: /Registrar Admin/i });
       fireEvent.click(setupTab);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Correo electrónico del Administrador/i)).toBeInTheDocument();
+      });
 
       const firstNameInput = screen.getByLabelText(/Nombre\(s\)/i);
       const emailInput = screen.getByLabelText(/Correo electrónico del Administrador/i);

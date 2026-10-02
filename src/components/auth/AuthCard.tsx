@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Tabs, type TabItem } from '../ui';
 import { LoginForm } from './LoginForm';
 import { SetupAdminForm } from './SetupAdminForm';
+import { authApi } from '../../services/authApi';
 import type { User, AuthSession } from '../../types/auth';
 
 interface AuthCardProps {
@@ -14,6 +15,31 @@ export const AuthCard: React.FC<AuthCardProps> = ({
   onRequirePasswordChange,
 }) => {
   const [activeTab, setActiveTab] = useState<'login' | 'setup'>('login');
+  const [isAdminConfigured, setIsAdminConfigured] = useState<boolean | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState<boolean>(true);
+
+  const fetchStatus = useCallback(async () => {
+    setIsLoadingStatus(true);
+    try {
+      const res = await authApi.getSetupStatus();
+      setIsAdminConfigured(res.configured);
+    } catch {
+      setIsAdminConfigured(false);
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId as 'login' | 'setup');
+    if (tabId === 'setup') {
+      fetchStatus();
+    }
+  };
 
   const tabs: TabItem[] = [
     { id: 'login', label: 'Iniciar Sesión' },
@@ -37,7 +63,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({
         <Tabs
           tabs={tabs}
           activeTab={activeTab}
-          onChange={(tabId) => setActiveTab(tabId as 'login' | 'setup')}
+          onChange={handleTabChange}
           fullWidth
         />
 
@@ -47,7 +73,13 @@ export const AuthCard: React.FC<AuthCardProps> = ({
             onRequirePasswordChange={onRequirePasswordChange}
           />
         ) : (
-          <SetupAdminForm onSuccess={onLoginSuccess} />
+          <SetupAdminForm
+            onSuccess={onLoginSuccess}
+            isConfigured={isAdminConfigured === true}
+            isLoadingStatus={isLoadingStatus}
+            onSwitchToLogin={() => setActiveTab('login')}
+            onRefreshStatus={fetchStatus}
+          />
         )}
       </Card>
 

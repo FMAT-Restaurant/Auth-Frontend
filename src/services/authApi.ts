@@ -175,6 +175,18 @@ export const authApi = {
     return API_BASE;
   },
 
+  async getSetupStatus(): Promise<{ configured: boolean }> {
+    try {
+      const res = await fetch(`${API_BASE}/auth/setup-status`);
+      if (!res.ok) {
+        return { configured: false };
+      }
+      return await res.json();
+    } catch {
+      return { configured: false };
+    }
+  },
+
   async login(identifier: string, password: string): Promise<AuthSession> {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
