@@ -53,9 +53,6 @@ export const AuthCard: React.FC<AuthCardProps> = ({
         <h1 style={{ fontSize: '26px', color: 'var(--color-ink)', fontWeight: 700 }}>
           FMAT Restaurant
         </h1>
-        <p style={{ fontSize: '14px', color: 'var(--color-muted)', margin: '6px 0 0' }}>
-          Sistema de Autenticación y Control de Personal
-        </p>
       </div>
 
       {/* Main Card */}
