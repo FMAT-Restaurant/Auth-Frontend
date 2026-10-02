@@ -259,7 +259,6 @@ export const ModulePlaceholderView: React.FC<ModulePlaceholderViewProps> = ({
                       staffId: currentUser.staffId || 'ADMIN',
                       displayName: currentUser.displayName,
                       roleLabel: currentUser.roleLabel,
-                      restaurantId: currentUser.restaurantId,
                       permissions: currentUser.permissions,
                     },
                     remoteUrl,

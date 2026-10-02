@@ -5,19 +5,28 @@ import type { User } from '../../types/auth';
 
 const mockAdminUser: User = {
   id: 'usr-admin-1',
-  restaurantId: 'rest-1',
   userType: 'ADMIN',
   email: 'admin@restaurant.com',
   displayName: 'Rolando Castro',
   firstName: 'Rolando',
   lastName: 'Castro',
   phone: '9991234567',
-  restaurantName: 'FMAT Bistro',
-  restaurantCommercialName: 'FMAT Gourmet',
-  restaurantAddress: 'Calle 60 #100',
   roleLabel: 'Administrador',
   roles: ['ADMINISTRADOR'],
   permissions: ['*'],
+};
+
+const mockStaffUser: User = {
+  id: 'usr-staff-1',
+  userType: 'STAFF',
+  staffId: 'M000001',
+  displayName: 'Colaborador M000001',
+  firstName: 'Carlos',
+  lastName: 'López',
+  phone: '9991112233',
+  roleLabel: 'Mesero',
+  roles: ['MESERO'],
+  permissions: ['sala:tables:view'],
 };
 
 describe('ProfileSettingsView Component', () => {
@@ -27,7 +36,7 @@ describe('ProfileSettingsView Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders personal and restaurant sections for admin user', () => {
+  it('renders personal, theme, and danger sections without restaurant section', () => {
     render(
       <ProfileSettingsView
         currentUser={mockAdminUser}
@@ -38,9 +47,24 @@ describe('ProfileSettingsView Component', () => {
 
     expect(screen.getByText('Perfil y Configuración')).toBeInTheDocument();
     expect(screen.getByText('Información Personal')).toBeInTheDocument();
-    expect(screen.getByText('Datos del Restaurante')).toBeInTheDocument();
+    expect(screen.queryByText('Datos del Restaurante')).not.toBeInTheDocument();
     expect(screen.getByText('Apariencia y Tema')).toBeInTheDocument();
     expect(screen.getByText('Zona de Peligro')).toBeInTheDocument();
+  });
+
+  it('shows read-only notice and disables inputs for staff user', () => {
+    render(
+      <ProfileSettingsView
+        currentUser={mockStaffUser}
+        onUpdateUser={vi.fn()}
+        onLogout={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Modo de solo lectura/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Ej. Roberto')).toBeDisabled();
+    expect(screen.getByPlaceholderText('Ej. Castro')).toBeDisabled();
+    expect(screen.queryByText('Guardar cambios personales')).not.toBeInTheDocument();
   });
 
   it('allows toggling dark mode and persists in document and localStorage', () => {
@@ -74,10 +98,10 @@ describe('ProfileSettingsView Component', () => {
       />,
     );
 
-    const openDeleteBtn = screen.getByRole('button', { name: /Dar de baja restaurante/i });
+    const openDeleteBtn = screen.getByRole('button', { name: /Eliminar mi cuenta/i });
     fireEvent.click(openDeleteBtn);
 
-    expect(screen.getByText(/¿Dar de baja restaurante definitivamente\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/¿Eliminar cuenta de usuario definitivamente\?/i)).toBeInTheDocument();
 
     const confirmBtn = screen.getByRole('button', { name: /Confirmar y eliminar/i });
     expect(confirmBtn).toBeDisabled();

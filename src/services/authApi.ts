@@ -10,7 +10,6 @@ export interface LoginResponse {
   mustChangePassword: boolean;
   user: {
     id: string;
-    restaurantId: string;
     staffId: string;
     email?: string;
     roles: string[];
@@ -18,15 +17,12 @@ export interface LoginResponse {
   };
 }
 
-export interface RegisterRestaurantResponse {
+export interface SetupAdminResponse {
   message: string;
-  restaurant: {
-    id: string;
-    name: string;
-  };
   user: {
     id: string;
     email: string;
+    staffId: string;
     roles: string[];
   };
   accessToken: string;
@@ -181,7 +177,6 @@ export const authApi = {
 
     const user: User = {
       id: data.user.id,
-      restaurantId: data.user.restaurantId,
       userType: isStaff ? 'STAFF' : 'ADMIN',
       staffId: data.user.staffId,
       email: data.user.email,
@@ -200,13 +195,14 @@ export const authApi = {
     };
   },
 
-  async registerRestaurant(params: {
-    restaurantName: string;
+  async setupAdmin(params: {
     email: string;
     password: string;
-    address?: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
   }): Promise<AuthSession> {
-    const res = await fetch(`${API_BASE}/auth/register-restaurant`, {
+    const res = await fetch(`${API_BASE}/auth/setup-admin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -214,15 +210,19 @@ export const authApi = {
 
     const data = await res.json();
     if (!res.ok) {
-      throw new Error(data.message || 'Error al registrar restaurante');
+      throw new Error(data.message || 'Error al configurar administrador');
     }
+
+    const fullName = `${params.firstName || ''} ${params.lastName || ''}`.trim() || 'Administrador Principal';
 
     const user: User = {
       id: data.user.id,
-      restaurantId: data.restaurant.id,
       userType: 'ADMIN',
       email: data.user.email,
-      displayName: 'Administrador Restaurante',
+      staffId: data.user.staffId || 'ADM000001',
+      firstName: params.firstName,
+      lastName: params.lastName,
+      displayName: fullName,
       roleLabel: 'Administrador',
       roles: ['ADMINISTRADOR'],
       permissions: ['*'],
@@ -298,10 +298,6 @@ export const authApi = {
 
     return {
       id: data.id,
-      restaurantId: data.restaurantId,
-      restaurantName: data.restaurantName,
-      restaurantCommercialName: data.restaurantCommercialName,
-      restaurantAddress: data.restaurantAddress,
       userType: isStaff ? 'STAFF' : 'ADMIN',
       staffId,
       email: data.email,
@@ -336,30 +332,6 @@ export const authApi = {
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.message || 'Error al actualizar perfil');
-    }
-
-    return data;
-  },
-
-  async updateRestaurant(
-    payload: { name: string; commercialName?: string; address?: string },
-    token?: string,
-  ): Promise<{ message: string; restaurant: { id: string; name: string; commercialName?: string; address?: string } }> {
-    const res = await authenticatedFetch(
-      '/auth/restaurant',
-      {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      },
-      token,
-    );
-
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.message || 'Error al actualizar datos del restaurante');
     }
 
     return data;
@@ -412,7 +384,6 @@ export const authApi = {
 
       return {
         id: item.id,
-        restaurantId: '',
         userType: 'STAFF',
         staffId: item.staffId || 'E000000',
         displayName: name,
@@ -459,7 +430,6 @@ export const authApi = {
       temporaryPassword: data.temporaryPassword,
       user: {
         id: data.employee?.id || data.id,
-        restaurantId: '',
         userType: 'STAFF',
         staffId: createdStaffId,
         displayName: `${payload.firstName} ${payload.lastName}`.trim(),

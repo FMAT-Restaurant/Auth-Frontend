@@ -5,8 +5,6 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import {
   UserIcon,
-  StoreIcon,
-  MapPinIcon,
   SunIcon,
   MoonIcon,
   TrashIcon,
@@ -31,6 +29,8 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   onUpdateUser,
   onLogout,
 }) => {
+  const isAdmin = currentUser.userType === 'ADMIN';
+
   // Estado de Datos Personales
   const [firstName, setFirstName] = useState(
     currentUser.firstName || currentUser.displayName.split(' ')[0] || '',
@@ -42,17 +42,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isProfileSaved, setIsProfileSaved] = useState(false);
   const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
-
-  // Estado de Datos del Restaurante (solo Admin)
-  const isAdmin = currentUser.userType === 'ADMIN';
-  const [restaurantName, setRestaurantName] = useState(currentUser.restaurantName || '');
-  const [commercialName, setCommercialName] = useState(
-    currentUser.restaurantCommercialName || currentUser.restaurantName || '',
-  );
-  const [restaurantAddress, setRestaurantAddress] = useState(currentUser.restaurantAddress || '');
-  const [isUpdatingRestaurant, setIsUpdatingRestaurant] = useState(false);
-  const [isRestaurantSaved, setIsRestaurantSaved] = useState(false);
-  const [restaurantErrorMsg, setRestaurantErrorMsg] = useState<string | null>(null);
 
   // Estado de Apariencia (Modo Oscuro)
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(() => {
@@ -70,9 +59,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
     firstName: false,
     lastName: false,
     phone: false,
-    restaurantName: false,
-    commercialName: false,
-    restaurantAddress: false,
   });
 
   const onUpdateUserRef = useRef(onUpdateUser);
@@ -93,16 +79,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
         if (!isDirtyRef.current.firstName && freshUser.firstName) setFirstName(freshUser.firstName);
         if (!isDirtyRef.current.lastName && freshUser.lastName) setLastName(freshUser.lastName);
         if (!isDirtyRef.current.phone && freshUser.phone) setPhone(freshUser.phone);
-        if (!isDirtyRef.current.restaurantName && freshUser.restaurantName) setRestaurantName(freshUser.restaurantName);
-        if (
-          !isDirtyRef.current.commercialName &&
-          (freshUser.restaurantCommercialName || freshUser.restaurantName)
-        ) {
-          setCommercialName(freshUser.restaurantCommercialName || freshUser.restaurantName || '');
-        }
-        if (!isDirtyRef.current.restaurantAddress && freshUser.restaurantAddress) {
-          setRestaurantAddress(freshUser.restaurantAddress);
-        }
         onUpdateUserRef.current(freshUser);
       })
       .catch(() => {
@@ -127,11 +103,16 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
     return defaultMessage;
   };
 
-  // Guardar datos personales
+  // Guardar datos personales (solo Administrador)
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
     setProfileErrorMsg(null);
+
+    if (!isAdmin) {
+      setProfileErrorMsg('Solo el Administrador tiene permisos para editar información de perfil.');
+      return;
+    }
 
     if (!firstName.trim() || !lastName.trim()) {
       setProfileErrorMsg('El nombre y los apellidos son obligatorios');
@@ -166,47 +147,6 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
       );
     } finally {
       setIsUpdatingProfile(false);
-    }
-  };
-
-  // Guardar datos del restaurante
-  const handleSaveRestaurant = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) return;
-    setRestaurantErrorMsg(null);
-
-    if (!restaurantName.trim()) {
-      setRestaurantErrorMsg('El nombre del restaurante es obligatorio');
-      return;
-    }
-
-    try {
-      setIsUpdatingRestaurant(true);
-      const res = await authApi.updateRestaurant(
-        {
-          name: restaurantName.trim(),
-          commercialName: commercialName.trim() || undefined,
-          address: restaurantAddress.trim() || undefined,
-        },
-        token,
-      );
-
-      const updatedUser: User = {
-        ...currentUser,
-        restaurantName: res.restaurant.name,
-        restaurantCommercialName: res.restaurant.commercialName,
-        restaurantAddress: res.restaurant.address,
-      };
-
-      onUpdateUser(updatedUser);
-      setIsRestaurantSaved(true);
-      setTimeout(() => setIsRestaurantSaved(false), 3500);
-    } catch (err: unknown) {
-      setRestaurantErrorMsg(
-        getFriendlyErrorMessage(err, 'Error al actualizar el restaurante'),
-      );
-    } finally {
-      setIsUpdatingRestaurant(false);
     }
   };
 
@@ -276,6 +216,29 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
           </div>
         </div>
 
+        {/* Notificación informativa para personal operativo */}
+        {!isAdmin && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px 16px',
+              marginBottom: '20px',
+              backgroundColor: 'var(--color-primary-soft)',
+              color: 'var(--color-ink)',
+              borderRadius: 'var(--radius-control)',
+              fontSize: '13px',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <AlertCircleIcon size={18} color="var(--color-primary)" />
+            <span>
+              <strong>Modo de solo lectura:</strong> Los datos del personal operativo solo pueden ser modificados por el Administrador del restaurante.
+            </span>
+          </div>
+        )}
+
         {profileErrorMsg && (
           <div
             style={{
@@ -307,7 +270,8 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                 setFirstName(e.target.value);
                 setIsProfileSaved(false);
               }}
-              placeholder="Ej. Rolando"
+              placeholder="Ej. Roberto"
+              disabled={!isAdmin}
               required
             />
             <Input
@@ -318,7 +282,8 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                 setLastName(e.target.value);
                 setIsProfileSaved(false);
               }}
-              placeholder="Ej. Castro Santeliz"
+              placeholder="Ej. Castro"
+              disabled={!isAdmin}
               required
             />
           </div>
@@ -333,6 +298,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                 setIsProfileSaved(false);
               }}
               placeholder="Ej. +52 999 123 4567"
+              disabled={!isAdmin}
             />
             <Input
               label="Correo electrónico / Identificador"
@@ -342,116 +308,9 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '8px', minHeight: '40px' }}>
-            {isProfileSaved ? (
-              <span
-                style={{
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: 'var(--color-muted)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  userSelect: 'none',
-                }}
-              >
-                <CheckIcon size={16} /> Guardado
-              </span>
-            ) : (
-              <Button type="submit" variant="primary" isLoading={isUpdatingProfile}>
-                Guardar cambios personales
-              </Button>
-            )}
-          </div>
-        </form>
-      </Card>
-
-      {/* SECCIÓN 2: DATOS DEL RESTAURANTE (ADMIN) */}
-      {isAdmin && (
-        <Card padding="lg">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: 'var(--radius-control)',
-                backgroundColor: 'var(--color-primary-soft)',
-                color: 'var(--color-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <StoreIcon size={22} />
-            </div>
-            <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
-                Datos del Restaurante
-              </h2>
-            </div>
-          </div>
-
-          {restaurantErrorMsg && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 16px',
-                marginBottom: '20px',
-                backgroundColor: 'var(--color-error-bg)',
-                color: 'var(--color-error)',
-                borderRadius: 'var(--radius-control)',
-                fontSize: '14px',
-                fontWeight: 500,
-                border: '1px solid var(--color-error)',
-              }}
-            >
-              <AlertCircleIcon size={18} />
-              <span>{restaurantErrorMsg}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSaveRestaurant} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="fmat-grid-2">
-              <Input
-                label="Nombre Oficial / Razón Social"
-                value={restaurantName}
-                onChange={(e) => {
-                  isDirtyRef.current.restaurantName = true;
-                  setRestaurantName(e.target.value);
-                  setIsRestaurantSaved(false);
-                }}
-                placeholder="Ej. FMAT Bistro Gourmet"
-                required
-              />
-              <Input
-                label="Nombre Comercial"
-                value={commercialName}
-                onChange={(e) => {
-                  isDirtyRef.current.commercialName = true;
-                  setCommercialName(e.target.value);
-                  setIsRestaurantSaved(false);
-                }}
-                placeholder="Ej. Bistro FMAT Centro"
-              />
-            </div>
-
-            <Input
-              label="Ubicación / Dirección"
-              value={restaurantAddress}
-              onChange={(e) => {
-                isDirtyRef.current.restaurantAddress = true;
-                setRestaurantAddress(e.target.value);
-                setIsRestaurantSaved(false);
-              }}
-              placeholder="Ej. Calle 60 #240 x 43 y 45, Centro, Mérida, Yucatán"
-              leftIcon={<MapPinIcon size={18} />}
-            />
-
+          {isAdmin && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '8px', minHeight: '40px' }}>
-              {isRestaurantSaved ? (
+              {isProfileSaved ? (
                 <span
                   style={{
                     fontSize: '14px',
@@ -466,16 +325,16 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
                   <CheckIcon size={16} /> Guardado
                 </span>
               ) : (
-                <Button type="submit" variant="primary" isLoading={isUpdatingRestaurant}>
-                  Guardar datos del restaurante
+                <Button type="submit" variant="primary" isLoading={isUpdatingProfile}>
+                  Guardar cambios personales
                 </Button>
               )}
             </div>
-          </form>
-        </Card>
-      )}
+          )}
+        </form>
+      </Card>
 
-      {/* SECCIÓN 3: APARIENCIA DEL SISTEMA (MODO OSCURO) */}
+      {/* SECCIÓN 2: APARIENCIA DEL SISTEMA (MODO OSCURO) */}
       <Card padding="lg">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
           <div
@@ -587,7 +446,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
         </div>
       </Card>
 
-      {/* SECCIÓN 4: ZONA DE PELIGRO (DANGER ZONE) */}
+      {/* SECCIÓN 3: ZONA DE PELIGRO (DANGER ZONE) */}
       <Card
         padding="lg"
         style={{
@@ -619,7 +478,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
             }}
             style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
           >
-            {isAdmin ? 'Dar de baja restaurante' : 'Eliminar mi cuenta'}
+            Eliminar mi cuenta
           </Button>
         </div>
       </Card>
@@ -628,7 +487,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        title={isAdmin ? '¿Dar de baja restaurante definitivamente?' : '¿Eliminar cuenta de usuario?'}
+        title="¿Eliminar cuenta de usuario definitivamente?"
         description="Esta acción es completamente irreversible y eliminará todos los registros asociados en la base de datos."
         footer={
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', width: '100%', flexWrap: 'wrap' }}>

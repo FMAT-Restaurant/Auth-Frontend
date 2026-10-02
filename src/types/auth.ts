@@ -1,15 +1,11 @@
 export interface User {
   id: string;
-  restaurantId: string;
   userType: 'ADMIN' | 'STAFF';
-  staffId?: string; // M000001 / E000001 para personal, ADMIN para admin
+  staffId?: string; // M000001 / E000001 para personal, ADM000001 para admin
   email?: string;
   firstName?: string;
   lastName?: string;
   phone?: string;
-  restaurantName?: string;
-  restaurantCommercialName?: string;
-  restaurantAddress?: string;
   displayName: string;
   roleLabel?: string; // Etiqueta descriptiva libre: ej. "Mesero", "Líder de inventario"
   roles?: string[]; // Roles devueltos por el backend: ["ADMINISTRADOR"], ["MESERO", "HOST"]

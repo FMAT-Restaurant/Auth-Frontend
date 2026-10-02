@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Tabs, type TabItem } from '../ui';
 import { LoginForm } from './LoginForm';
-import { RegisterRestaurantForm } from './RegisterRestaurantForm';
+import { SetupAdminForm } from './SetupAdminForm';
 import type { User, AuthSession } from '../../types/auth';
 
 interface AuthCardProps {
@@ -13,33 +13,23 @@ export const AuthCard: React.FC<AuthCardProps> = ({
   onLoginSuccess,
   onRequirePasswordChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  const [activeTab, setActiveTab] = useState<'login' | 'setup'>('login');
 
   const tabs: TabItem[] = [
     { id: 'login', label: 'Iniciar Sesión' },
-    { id: 'register', label: 'Registrar Restaurante' },
+    { id: 'setup', label: 'Configurar Admin' },
   ];
 
   return (
     <div style={{ width: '100%', maxWidth: '480px', margin: '0 auto' }}>
       {/* Brand Header */}
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '6px 14px',
-            backgroundColor: 'var(--color-primary-soft)',
-            borderRadius: '9999px',
-            marginBottom: '12px',
-          }}
-        >
-        </div>
-
         <h1 style={{ fontSize: '26px', color: 'var(--color-ink)', fontWeight: 700 }}>
           FMAT Restaurant
         </h1>
+        <p style={{ fontSize: '14px', color: 'var(--color-muted)', margin: '6px 0 0' }}>
+          Sistema de Autenticación y Control de Personal
+        </p>
       </div>
 
       {/* Main Card */}
@@ -47,7 +37,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({
         <Tabs
           tabs={tabs}
           activeTab={activeTab}
-          onChange={(tabId) => setActiveTab(tabId as 'login' | 'register')}
+          onChange={(tabId) => setActiveTab(tabId as 'login' | 'setup')}
           fullWidth
         />
 
@@ -57,7 +47,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({
             onRequirePasswordChange={onRequirePasswordChange}
           />
         ) : (
-          <RegisterRestaurantForm onSuccess={onLoginSuccess} />
+          <SetupAdminForm onSuccess={onLoginSuccess} />
         )}
       </Card>
 
