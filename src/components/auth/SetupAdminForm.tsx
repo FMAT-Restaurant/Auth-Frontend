@@ -10,7 +10,6 @@ interface SetupAdminFormProps {
 export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,7 +38,6 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => 
         password,
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
-        phone: phone.trim() || undefined,
       });
 
       onSuccess(session);
@@ -71,13 +69,6 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => 
           leftIcon={<UserIcon size={18} />}
         />
       </div>
-
-      <Input
-        label="Teléfono (opcional)"
-        placeholder="Ej. +52 999 123 4567"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-      />
 
       <Input
         label="Correo electrónico del Administrador"
