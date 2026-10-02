@@ -1,4 +1,4 @@
-import type { User, AuthSession } from '../types/auth';
+import type { User, AuthSession, RoleDefinition, ServicePermissionGroup } from '../types/auth';
 import { authStorage } from './authStorage';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:4000/api/v1';
@@ -37,6 +37,7 @@ export interface BackendStaffItem {
   roles: string[];
   isActive: boolean;
   passwordStatus: string;
+  temporaryPassword?: string | null;
   createdAt?: string;
 }
 
@@ -422,12 +423,74 @@ export const authApi = {
         userType: 'STAFF',
         staffId: item.staffId || 'E000000',
         displayName: name,
+        firstName: item.firstName,
+        lastName: item.lastName,
         roleLabel: roles.join(', '),
         roles,
         permissions: rolesToPermissions(roles),
+        isActive: item.isActive,
+        passwordStatus: item.passwordStatus as 'TEMPORARY' | 'ACTIVE',
+        temporaryPassword: item.temporaryPassword,
         mustChangePassword: item.passwordStatus === 'TEMPORARY',
       };
     });
+  },
+
+  async updateStaff(
+    id: string,
+    payload: { firstName?: string; lastName?: string; roles?: string[]; isActive?: boolean },
+    token?: string,
+  ): Promise<User> {
+    const res = await authenticatedFetch(
+      `/staff/${id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(formatErrorMessage(data, 'Error al actualizar colaborador'));
+    }
+
+    const roles = data.roles || [];
+    return {
+      id: data.id,
+      userType: 'STAFF',
+      staffId: data.staffId,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      displayName: `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Colaborador',
+      roleLabel: roles.join(', '),
+      roles,
+      permissions: rolesToPermissions(roles),
+      isActive: data.isActive,
+      passwordStatus: data.passwordStatus,
+      temporaryPassword: data.temporaryPassword,
+      mustChangePassword: data.passwordStatus === 'TEMPORARY',
+    };
+  },
+
+  async deleteStaff(id: string, token?: string): Promise<{ message: string; staffId: string }> {
+    const res = await authenticatedFetch(
+      `/staff/${id}`,
+      {
+        method: 'DELETE',
+      },
+      token,
+    );
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(formatErrorMessage(data, 'Error al eliminar colaborador'));
+    }
+
+    return data;
   },
 
   async createStaff(
@@ -467,9 +530,14 @@ export const authApi = {
         userType: 'STAFF',
         staffId: createdStaffId,
         displayName: `${payload.firstName} ${payload.lastName}`.trim(),
+        firstName: payload.firstName,
+        lastName: payload.lastName,
         roleLabel: roles.join(', '),
         roles,
         permissions: rolesToPermissions(roles),
+        isActive: true,
+        passwordStatus: 'TEMPORARY',
+        temporaryPassword: data.temporaryPassword,
         mustChangePassword: true,
       },
     };
@@ -513,5 +581,64 @@ export const authApi = {
     }
 
     return { temporaryPassword: data.temporaryPassword };
+  },
+
+  async getRoles(token?: string): Promise<RoleDefinition[]> {
+    const res = await authenticatedFetch('/roles', {}, token);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al consultar roles');
+    }
+    return res.json();
+  },
+
+  async getPermissionsCatalog(token?: string): Promise<ServicePermissionGroup[]> {
+    const res = await authenticatedFetch('/roles/catalog', {}, token);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al consultar catálogo de permisos');
+    }
+    return res.json();
+  },
+
+  async createRole(
+    payload: { name: string; description?: string; code?: string; permissions: string[] },
+    token?: string,
+  ): Promise<RoleDefinition> {
+    const res = await authenticatedFetch(
+      '/roles',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(formatErrorMessage(data, 'Error al crear rol'));
+    }
+
+    return data;
+  },
+
+  async deleteRole(code: string, token?: string): Promise<{ message: string; code: string }> {
+    const res = await authenticatedFetch(
+      `/roles/${encodeURIComponent(code)}`,
+      {
+        method: 'DELETE',
+      },
+      token,
+    );
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(formatErrorMessage(data, 'Error al eliminar rol'));
+    }
+
+    return data;
   },
 };

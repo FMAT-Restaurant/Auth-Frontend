@@ -220,3 +220,19 @@ export const MenuIcon: React.FC<IconProps> = ({ size = 20, className = '', ...pr
     <line x1="3" x2="21" y1="18" y2="18" />
   </svg>
 );
+
+export const CopyIcon: React.FC<IconProps> = ({ size = 20, className = '', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+  </svg>
+);
+
+export const KeyIcon: React.FC<IconProps> = ({ size = 20, className = '', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <circle cx="7.5" cy="15.5" r="4.5"/>
+    <path d="m11 12 8-8"/>
+    <path d="m15 8 3 3"/>
+    <path d="m18 5 2 2"/>
+  </svg>
+);

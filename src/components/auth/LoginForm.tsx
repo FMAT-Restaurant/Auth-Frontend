@@ -102,31 +102,71 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       </div>
 
       {isStaff ? (
-        <Input
-          label="Staff ID"
-          type="text"
-          placeholder="Ej. M000001"
-          value={identifier}
-          onChange={(e) => {
-            setIdentifier(e.target.value.toUpperCase());
-            if (error) setError(null);
-          }}
-          required
-          leftIcon={<UserIcon size={18} />}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <Input
+            label="Staff ID"
+            type="text"
+            placeholder="Ej. M000001"
+            value={identifier}
+            onChange={(e) => {
+              setIdentifier(e.target.value);
+              if (error) setError(null);
+            }}
+            required
+            leftIcon={<UserIcon size={18} />}
+          />
+          {identifier.includes('@') && (
+            <button
+              type="button"
+              onClick={() => setIsStaff(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-primary)',
+                fontSize: '12px',
+                textAlign: 'left',
+                padding: '2px 4px',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              💡 Parece un correo electrónico. Cambiar a Gerente / Admin
+            </button>
+          )}
+        </div>
       ) : (
-        <Input
-          label="Correo Electrónico"
-          type="email"
-          placeholder="admin@fmat.com"
-          value={identifier}
-          onChange={(e) => {
-            setIdentifier(e.target.value);
-            if (error) setError(null);
-          }}
-          required
-          leftIcon={<MailIcon size={18} />}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <Input
+            label="Correo Electrónico"
+            type="email"
+            placeholder="admin@fmat.com"
+            value={identifier}
+            onChange={(e) => {
+              setIdentifier(e.target.value);
+              if (error) setError(null);
+            }}
+            required
+            leftIcon={<MailIcon size={18} />}
+          />
+          {/^[A-Za-z]\d{5,7}$/.test(identifier.trim()) && (
+            <button
+              type="button"
+              onClick={() => setIsStaff(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-primary)',
+                fontSize: '12px',
+                textAlign: 'left',
+                padding: '2px 4px',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >
+              💡 Parece un Staff ID ({identifier.trim().toUpperCase()}). Cambiar a modo Personal
+            </button>
+          )}
+        </div>
       )}
 
       <Input

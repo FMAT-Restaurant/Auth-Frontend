@@ -11,12 +11,37 @@ export interface User {
   views?: string[]; // Vistas autorizadas: ["orders-pos-view", "menu-catalog-view"]
   permissions: string[]; // Lista de códigos PBAC: ej. ["inventory:view", "inventory:ingredients:create"]
   mustChangePassword?: boolean;
+  isActive?: boolean;
+  passwordStatus?: 'TEMPORARY' | 'ACTIVE';
+  temporaryPassword?: string | null;
 }
 
 export interface AuthSession {
   accessToken: string;
   refreshToken?: string;
   user: User;
+}
+
+export interface RoleDefinition {
+  code: string;
+  name: string;
+  description?: string;
+  permissions: string[];
+  isAssignable?: boolean;
+  isSystemRole?: boolean;
+}
+
+export interface PermissionItem {
+  code: string;
+  label: string;
+  description: string;
+}
+
+export interface ServicePermissionGroup {
+  serviceKey: string;
+  serviceName: string;
+  iconName?: string;
+  permissions: PermissionItem[];
 }
 
 export interface PermissionGroup {

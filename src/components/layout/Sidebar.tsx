@@ -7,7 +7,6 @@ import {
   CreditCardIcon,
   SettingsIcon,
   LogOutIcon,
-  XIcon,
 } from '../ui/Icons';
 import type { User } from '../../types/auth';
 
@@ -158,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {onCloseMobile && (
+        {/* {onCloseMobile && (
           <button
             type="button"
             className="fmat-mobile-close-btn"
@@ -175,7 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <XIcon size={20} />
           </button>
-        )}
+        )} */}
       </div>
 
       {/* Navigation Links */}

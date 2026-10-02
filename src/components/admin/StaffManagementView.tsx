@@ -1,14 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Input } from '../ui';
+import { Card, Button, Input, Tabs, type TabItem } from '../ui';
 import { authApi } from '../../services/authApi';
-import type { User } from '../../types/auth';
-
-const AVAILABLE_OPERATING_ROLES = [
-  { code: 'MESERO', label: 'Mesero (Órdenes y Menú)' },
-  { code: 'HOST', label: 'Host (Sala y Asignación de Mesas)' },
-  { code: 'ALMACENISTA', label: 'Almacenista (Inventario y Existencias)' },
-  { code: 'CHEF_MASTER', label: 'Chef Master (Cocina y KDS)' },
-];
+import { StaffDetailDrawer } from './StaffDetailDrawer';
+import { RolesManagementView } from './RolesManagementView';
+import type { User, RoleDefinition, ServicePermissionGroup } from '../../types/auth';
 
 interface StaffManagementViewProps {
   currentUser: User;
@@ -17,19 +12,34 @@ interface StaffManagementViewProps {
 }
 
 export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ currentUser, token }) => {
+  const [activeTab, setActiveTab] = useState<'staff' | 'roles'>('staff');
+
+  // Datos de Personal
   const [staffList, setStaffList] = useState<User[]>([]);
+  const [rolesList, setRolesList] = useState<RoleDefinition[]>([]);
+  const [permissionsCatalog, setPermissionsCatalog] = useState<ServicePermissionGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
+  // Drawer Lateral de Detalle / Edición
+  const [selectedCollaborator, setSelectedCollaborator] = useState<User | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Formulario de Alta de Personal
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [selectedRoles, setSelectedRoles] = useState<string[]>(['MESERO']);
-  const [tempPassword, setTempPassword] = useState('Temp1234!');
 
-  const loadStaff = useCallback(async () => {
+  // Modo Permisos Personalizados en Alta
+  const [isCustomizingPermissions, setIsCustomizingPermissions] = useState(false);
+  const [customPermissions, setCustomPermissions] = useState<string[]>([]);
+  const [saveRoleAsNew, setSaveRoleAsNew] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+
+  const loadData = useCallback(async () => {
     if (!token) {
       setIsLoading(false);
       return;
@@ -37,8 +47,14 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
     setIsLoading(true);
     setError(null);
     try {
-      const list = await authApi.getAllStaff(token);
-      setStaffList(list);
+      const [staff, roles, catalog] = await Promise.all([
+        authApi.getAllStaff(token),
+        authApi.getRoles(token).catch(() => []),
+        authApi.getPermissionsCatalog(token).catch(() => []),
+      ]);
+      setStaffList(staff);
+      setRolesList(roles);
+      setPermissionsCatalog(catalog);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al conectar con la base de datos');
     } finally {
@@ -47,8 +63,8 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
   }, [token]);
 
   useEffect(() => {
-    loadStaff();
-  }, [loadStaff]);
+    loadData();
+  }, [loadData]);
 
   const handleToggleRole = (code: string) => {
     setSelectedRoles((prev) =>
@@ -60,9 +76,15 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
     );
   };
 
+  const handleToggleCustomPermission = (code: string) => {
+    setCustomPermissions((prev) =>
+      prev.includes(code) ? prev.filter((p) => p !== code) : [...prev, code],
+    );
+  };
+
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || selectedRoles.length === 0) return;
+    if (!firstName.trim() || !lastName.trim()) return;
 
     if (!token) {
       setError('Sesión no autenticada');
@@ -74,28 +96,49 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
     setSuccessBanner(null);
 
     try {
+      let finalRoles = [...selectedRoles];
+
+      // Si el admin personalizó permisos y marcó "Guardar Rol como..."
+      if (isCustomizingPermissions && saveRoleAsNew && newRoleName.trim()) {
+        if (customPermissions.length === 0) {
+          throw new Error('Debes seleccionar al menos un permiso para el nuevo rol');
+        }
+        const createdRole = await authApi.createRole(
+          {
+            name: newRoleName.trim(),
+            description: `Rol personalizado para ${firstName.trim()} ${lastName.trim()}`,
+            permissions: customPermissions,
+          },
+          token,
+        );
+        finalRoles = [createdRole.code];
+      }
+
       const result = await authApi.createStaff(
         {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
-          roles: selectedRoles,
-          initialPassword: tempPassword.trim() || undefined,
+          roles: finalRoles,
         },
         token,
       );
 
       setSuccessBanner(
-        `¡Colaborador creado en la base de datos! Staff ID: ${result.staffId} | Contraseña temporal: ${result.temporaryPassword || tempPassword}`,
+        `¡Colaborador creado exitosamente! Staff ID: ${result.staffId} | Contraseña temporal: ${result.temporaryPassword}`,
       );
 
-      // Recargar lista real de la base de datos
-      await loadStaff();
+      // Recargar lista
+      await loadData();
 
+      // Limpiar formulario
       setShowCreateForm(false);
       setFirstName('');
       setLastName('');
       setSelectedRoles(['MESERO']);
-      setTempPassword('Temp1234!');
+      setIsCustomizingPermissions(false);
+      setCustomPermissions([]);
+      setSaveRoleAsNew(false);
+      setNewRoleName('');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al registrar personal en la base de datos');
     } finally {
@@ -103,16 +146,42 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
     }
   };
 
-  const handleResetPassword = async (memberId: string, memberName: string) => {
-    if (!token) return;
-    try {
-      const res = await authApi.resetStaffPassword(memberId, token);
-      alert(`Contraseña restablecida para ${memberName}.\nNueva clave temporal: ${res.temporaryPassword || 'Temp1234!'}`);
-      await loadStaff();
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error al restablecer contraseña');
-    }
+  const handleOpenCollaboratorDrawer = (collaborator: User) => {
+    setSelectedCollaborator(collaborator);
+    setIsDrawerOpen(true);
   };
+
+  const handleSaveCollaborator = async (
+    id: string,
+    updatedData: { firstName: string; lastName: string; roles: string[]; isActive: boolean },
+  ) => {
+    if (!token) return;
+    const updatedUser = await authApi.updateStaff(id, updatedData, token);
+    setSelectedCollaborator(updatedUser);
+    await loadData();
+  };
+
+  const handleResetCollaboratorPassword = async (id: string) => {
+    if (!token) return {};
+    const res = await authApi.resetStaffPassword(id, token);
+    await loadData();
+    return res;
+  };
+
+  const handleDeleteCollaborator = async (id: string) => {
+    if (!token) return;
+    await authApi.deleteStaff(id, token);
+    setIsDrawerOpen(false);
+    setSelectedCollaborator(null);
+    setSuccessBanner('Colaborador eliminado definitivamente del sistema');
+    setTimeout(() => setSuccessBanner(null), 3500);
+    await loadData();
+  };
+
+  const adminTabs: TabItem[] = [
+    { id: 'staff', label: 'Personal Operativo' },
+    { id: 'roles', label: 'Roles y Permisos por Microservicio' },
+  ];
 
   return (
     <div style={{ maxWidth: '1080px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -138,252 +207,382 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
               letterSpacing: '0.05em',
             }}
           >
-            Panel de Administración · Auth
+            Panel de Administración
           </span>
-          <h1 style={{ fontSize: '24px', marginTop: '2px', color: 'var(--color-ink)', fontWeight: 700 }}>Gestión de Personal y Permisos</h1>
+          <h1 style={{ fontSize: '24px', marginTop: '2px', color: 'var(--color-ink)', fontWeight: 700 }}>
+            Control de Personal y Accesos
+          </h1>
           <p style={{ fontSize: '14px', color: 'var(--color-muted)', margin: 0 }}>
             Sesión: <strong>{currentUser.displayName}</strong> ({currentUser.email || currentUser.staffId})
           </p>
         </div>
 
-        <Button
-          variant={showCreateForm ? 'secondary' : 'primary'}
-          size="md"
-          onClick={() => {
-            setShowCreateForm(!showCreateForm);
-            setError(null);
-            setSuccessBanner(null);
-          }}
-        >
-          {showCreateForm ? 'Cerrar formulario' : '+ Dar de alta empleado'}
-        </Button>
+        {activeTab === 'staff' && (
+          <Button
+            variant={showCreateForm ? 'secondary' : 'primary'}
+            size="md"
+            onClick={() => {
+              setShowCreateForm(!showCreateForm);
+              setError(null);
+              setSuccessBanner(null);
+            }}
+          >
+            {showCreateForm ? 'Cerrar formulario' : '+ Dar de alta empleado'}
+          </Button>
+        )}
       </div>
 
-      {/* Notifications */}
-      {successBanner && (
-        <div
-          style={{
-            padding: '12px 16px',
-            backgroundColor: 'var(--color-success-bg)',
-            border: '1px solid var(--color-success)',
-            borderRadius: 'var(--radius-control)',
-            color: 'var(--color-success)',
-            fontSize: '13px',
-            fontWeight: 600,
-          }}
-        >
-          {successBanner}
-        </div>
-      )}
+      {/* Tabs Principales: Personal vs Roles */}
+      <Tabs
+        tabs={adminTabs}
+        activeTab={activeTab}
+        onChange={(id) => setActiveTab(id as 'staff' | 'roles')}
+        variant="pills"
+      />
 
-      {error && (
-        <div
-          style={{
-            padding: '12px 16px',
-            backgroundColor: 'var(--color-error-bg)',
-            border: '1px solid var(--color-error)',
-            borderRadius: 'var(--radius-control)',
-            color: 'var(--color-error)',
-            fontSize: '13px',
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Create Staff Form Card */}
-      {showCreateForm && (
-        <Card padding="md" style={{ border: '1px solid var(--color-primary)' }}>
-          <h2 style={{ fontSize: '18px', marginBottom: '4px', color: 'var(--color-ink)' }}>Registrar nuevo colaborador en la Base de Datos</h2>
-          <p style={{ fontSize: '13px', color: 'var(--color-muted)', marginBottom: '16px' }}>
-            El backend generará automáticamente un Staff ID único basado en el rol primario (ej. M000001) y la clave temporal.
-          </p>
-
-          <form onSubmit={handleCreateStaff} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-              <Input
-                label="Nombre(s)"
-                placeholder="Ej. Juan"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
-              <Input
-                label="Apellidos"
-                placeholder="Ej. Pérez"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-              />
+      {/* Vista de Roles y Permisos */}
+      {activeTab === 'roles' ? (
+        <RolesManagementView token={token} onRolesChanged={loadData} />
+      ) : (
+        /* Vista de Personal Operativo */
+        <>
+          {/* Notificaciones */}
+          {successBanner && (
+            <div
+              style={{
+                padding: '12px 16px',
+                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: 'var(--radius-control)',
+                color: 'var(--color-ink)',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}
+            >
+              {successBanner}
             </div>
+          )}
 
-            <div>
-              <Input
-                label="Contraseña temporal inicial"
-                value={tempPassword}
-                onChange={(e) => setTempPassword(e.target.value)}
-                required
-                helperText="El empleado deberá cambiarla obligatoriamente en su primer login"
-              />
+          {error && (
+            <div
+              style={{
+                padding: '12px 16px',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: 'var(--radius-control)',
+                color: 'var(--color-error)',
+                fontSize: '13px',
+              }}
+            >
+              {error}
             </div>
+          )}
 
-            {/* Operating Roles Selector */}
-            <div>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)', display: 'block', marginBottom: '8px' }}>
-                Roles operativos del empleado (selecciona al menos uno) *
-              </label>
+          {/* Formulario de Alta de Colaborador */}
+          {showCreateForm && (
+            <Card padding="md" style={{ border: '1px solid var(--color-primary)' }}>
+              <h2 style={{ fontSize: '18px', marginBottom: '4px', color: 'var(--color-ink)' }}>
+                Registrar nuevo colaborador
+              </h2>
+              <p style={{ fontSize: '13px', color: 'var(--color-muted)', marginBottom: '16px' }}>
+                El backend generará automáticamente un <strong>Staff ID único</strong> y una <strong>contraseña temporal aleatoria</strong>.
+              </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
-                {AVAILABLE_OPERATING_ROLES.map((role) => {
-                  const isChecked = selectedRoles.includes(role.code);
-                  return (
-                    <label
-                      key={role.code}
+              <form onSubmit={handleCreateStaff} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <Input
+                    label="Nombre(s)"
+                    placeholder="Ej. Juan"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Apellidos"
+                    placeholder="Ej. Pérez"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* Selector de Roles Existentes */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                      Asignar Rol(es) del Restaurante *
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomizingPermissions(!isCustomizingPermissions)}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        padding: '10px 14px',
-                        borderRadius: 'var(--radius-control)',
-                        border: isChecked ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                        backgroundColor: isChecked ? 'var(--color-primary-soft)' : 'var(--color-surface)',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-primary)',
+                        fontSize: '13px',
                         cursor: 'pointer',
+                        textDecoration: 'underline',
+                        fontWeight: 500,
                       }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => handleToggleRole(role.code)}
-                        style={{ accentColor: 'var(--color-primary)', width: '16px', height: '16px' }}
-                      />
-                      <span style={{ fontSize: '13px', fontWeight: isChecked ? 600 : 500, color: 'var(--color-ink)' }}>
-                        {role.label}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
+                      {isCustomizingPermissions ? '← Volver a roles predefinidos' : '⚙ Personalizar permisos directamente'}
+                    </button>
+                  </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
-              <Button variant="secondary" size="md" onClick={() => setShowCreateForm(false)}>
-                Cancelar
-              </Button>
-              <Button variant="primary" size="md" type="submit" isLoading={isSubmitting}>
-                Guardar en Base de Datos
-              </Button>
-            </div>
-          </form>
-        </Card>
-      )}
-
-      {/* Staff Table */}
-      <Card padding="none">
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2 style={{ fontSize: '16px', color: 'var(--color-ink)' }}>Colaboradores Registrados ({staffList.length})</h2>
-            <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>Conectado en tiempo real a PostgreSQL (Neon)</span>
-          </div>
-
-          <Button variant="tertiary" size="sm" onClick={loadStaff} isLoading={isLoading}>
-            Actualizar lista
-          </Button>
-        </div>
-
-        {isLoading ? (
-          <div style={{ padding: '36px', textAlign: 'center', color: 'var(--color-muted)', fontSize: '14px' }}>
-            Cargando personal desde la base de datos...
-          </div>
-        ) : staffList.length === 0 ? (
-          <div style={{ padding: '36px', textAlign: 'center', color: 'var(--color-muted)', fontSize: '14px' }}>
-            Aún no hay colaboradores registrados en la base de datos. Haz clic en <strong>+ Dar de alta empleado</strong> para agregar al primero.
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-              <thead>
-                <tr style={{ backgroundColor: 'var(--color-canvas)', borderBottom: '1px solid var(--color-border)' }}>
-                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Staff ID</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Colaborador</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Roles asignados</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Estado</th>
-                  <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)', textAlign: 'right' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {staffList.map((member) => (
-                  <tr key={member.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'monospace' }}>
-                      {member.staffId}
-                    </td>
-                    <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--color-ink)' }}>
-                      {member.displayName}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {(member.roles || []).map((r) => (
-                          <span
-                            key={r}
-                            style={{
-                              padding: '2px 8px',
-                              backgroundColor: 'var(--color-canvas)',
-                              border: '1px solid var(--color-border)',
-                              borderRadius: 'var(--radius-sm)',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              color: 'var(--color-text)',
-                            }}
-                          >
-                            {r}
+                  {!isCustomizingPermissions ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                      {rolesList
+                        .filter((r) => r.code !== 'ADMINISTRADOR')
+                        .map((role) => {
+                          const isChecked = selectedRoles.includes(role.code);
+                          return (
+                            <label
+                              key={role.code}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '10px 14px',
+                                borderRadius: 'var(--radius-control)',
+                                border: isChecked ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                backgroundColor: isChecked ? 'rgba(234, 88, 12, 0.05)' : 'var(--color-surface)',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleToggleRole(role.code)}
+                                style={{ accentColor: 'var(--color-primary)', width: '16px', height: '16px' }}
+                              />
+                              <div>
+                                <span style={{ fontSize: '13px', fontWeight: isChecked ? 600 : 500, color: 'var(--color-ink)' }}>
+                                  {role.name}
+                                </span>
+                                {role.description && (
+                                  <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>
+                                    {role.description}
+                                  </div>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })}
+                    </div>
+                  ) : (
+                    /* Modo Personalizar Permisos con opción Guardar Rol como... */
+                    <div
+                      style={{
+                        padding: '16px',
+                        borderRadius: 'var(--radius-control)',
+                        border: '1px solid var(--color-border)',
+                        backgroundColor: 'var(--color-surface-elevated)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '14px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '10px', borderBottom: '1px solid var(--color-border)' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={saveRoleAsNew}
+                            onChange={(e) => setSaveRoleAsNew(e.target.checked)}
+                            style={{ accentColor: 'var(--color-primary)', width: '16px', height: '16px' }}
+                          />
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                            Guardar esta configuración como un nuevo Rol
                           </span>
+                        </label>
+                      </div>
+
+                      {saveRoleAsNew && (
+                        <Input
+                          label="Nombre del Nuevo Rol"
+                          placeholder="Ej. Mesero de Turno Nocturno"
+                          value={newRoleName}
+                          onChange={(e) => setNewRoleName(e.target.value)}
+                          required
+                        />
+                      )}
+
+                      <div style={{ maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {permissionsCatalog.map((group) => (
+                          <div key={group.serviceKey} style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '10px', backgroundColor: 'var(--color-surface)' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ink)', marginBottom: '8px' }}>
+                              {group.serviceName}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '6px' }}>
+                              {group.permissions.map((perm) => (
+                                <label key={perm.code} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-ink)', cursor: 'pointer' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={customPermissions.includes(perm.code)}
+                                    onChange={() => handleToggleCustomPermission(perm.code)}
+                                    style={{ accentColor: 'var(--color-primary)' }}
+                                  />
+                                  <span>{perm.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+                  <Button variant="secondary" size="md" onClick={() => setShowCreateForm(false)}>
+                    Cancelar
+                  </Button>
+                  <Button variant="primary" size="md" type="submit" isLoading={isSubmitting}>
+                    Crear Colaborador
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          )}
+
+          {/* Tabla de Colaboradores */}
+          <Card padding="none">
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '16px', color: 'var(--color-ink)', margin: 0 }}>
+                  Colaboradores Registrados ({staffList.length})
+                </h2>
+                <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
+                  Haz clic en cualquier colaborador para ver su expediente y contraseña temporal.
+                </span>
+              </div>
+
+              <Button variant="tertiary" size="sm" onClick={loadData} isLoading={isLoading}>
+                Actualizar lista
+              </Button>
+            </div>
+
+            {isLoading ? (
+              <div style={{ padding: '36px', textAlign: 'center', color: 'var(--color-muted)', fontSize: '14px' }}>
+                Cargando personal desde la base de datos...
+              </div>
+            ) : staffList.length === 0 ? (
+              <div style={{ padding: '36px', textAlign: 'center', color: 'var(--color-muted)', fontSize: '14px' }}>
+                Aún no hay colaboradores registrados. Haz clic en <strong>+ Dar de alta empleado</strong> para agregar al primero.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: 'var(--color-canvas)', borderBottom: '1px solid var(--color-border)' }}>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Staff ID</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Colaborador</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Roles asignados</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Estado de clave</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)', textAlign: 'right' }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffList.map((member) => (
+                      <tr
+                        key={member.id}
+                        onClick={() => handleOpenCollaboratorDrawer(member)}
                         style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          color: member.mustChangePassword ? 'var(--color-warning)' : 'var(--color-success)',
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            backgroundColor: member.mustChangePassword ? 'var(--color-warning)' : 'var(--color-success)',
-                          }}
-                        />
-                        {member.mustChangePassword ? 'Clave provisional' : 'Activo'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleResetPassword(member.id, member.displayName)}
-                        style={{
-                          fontSize: '12px',
-                          color: 'var(--color-primary)',
-                          background: 'none',
-                          border: 'none',
+                          borderBottom: '1px solid var(--color-border)',
                           cursor: 'pointer',
-                          textDecoration: 'underline',
+                          transition: 'background-color 0.15s ease-in-out',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'var(--color-surface-elevated)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
                         }}
                       >
-                        Restablecer clave
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+                        <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'monospace' }}>
+                          {member.staffId}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                          {member.displayName}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {(member.roles || []).map((r) => (
+                              <span
+                                key={r}
+                                style={{
+                                  padding: '2px 8px',
+                                  backgroundColor: 'var(--color-canvas)',
+                                  border: '1px solid var(--color-border)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  color: 'var(--color-text)',
+                                }}
+                              >
+                                {r}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              color: member.mustChangePassword ? 'var(--color-warning)' : 'var(--color-success)',
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                backgroundColor: member.mustChangePassword ? 'var(--color-warning)' : 'var(--color-success)',
+                              }}
+                            />
+                            {member.mustChangePassword ? 'Clave provisional (Ver)' : 'Activo'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenCollaboratorDrawer(member);
+                            }}
+                          >
+                            Expediente →
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        </>
+      )}
+
+      {/* Drawer Lateral Deslizable de Detalle / Edición / Baja */}
+      <StaffDetailDrawer
+        isOpen={isDrawerOpen}
+        collaborator={selectedCollaborator}
+        availableRoles={rolesList}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedCollaborator(null);
+        }}
+        onSave={handleSaveCollaborator}
+        onResetPassword={handleResetCollaboratorPassword}
+        onDelete={handleDeleteCollaborator}
+      />
     </div>
   );
 };
