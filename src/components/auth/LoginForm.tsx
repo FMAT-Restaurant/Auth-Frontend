@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input, UserIcon, MailIcon, LockIcon } from '../ui';
+import { Button, Input, UserIcon, MailIcon, LockIcon, AlertCircleIcon } from '../ui';
 import { authApi } from '../../services/authApi';
 import type { User, AuthSession } from '../../types/auth';
 
@@ -31,7 +31,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         onSuccess(session);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al conectar con el servidor de autenticación');
+      if (err instanceof Error && err.message === 'Failed to fetch') {
+        setError('No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Error al conectar con el servidor de autenticación');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +104,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           type="text"
           placeholder="Ej. M000001"
           value={identifier}
-          onChange={(e) => setIdentifier(e.target.value.toUpperCase())}
+          onChange={(e) => {
+            setIdentifier(e.target.value.toUpperCase());
+            if (error) setError(null);
+          }}
           required
           leftIcon={<UserIcon size={18} />}
         />
@@ -110,7 +117,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           type="email"
           placeholder="admin@fmat.com"
           value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
+          onChange={(e) => {
+            setIdentifier(e.target.value);
+            if (error) setError(null);
+          }}
           required
           leftIcon={<MailIcon size={18} />}
         />
@@ -121,12 +131,36 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         type="password"
         placeholder="••••••••••••"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e) => {
+          setPassword(e.target.value);
+          if (error) setError(null);
+        }}
         required
         isPasswordToggleable
         leftIcon={<LockIcon size={18} />}
-        error={error || undefined}
       />
+
+      {error && (
+        <div
+          role="alert"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 12px',
+            backgroundColor: 'var(--color-error-bg)',
+            color: 'var(--color-error)',
+            border: '1px solid var(--color-error)',
+            borderRadius: 'var(--radius-control)',
+            fontSize: '13px',
+            fontWeight: 500,
+            lineHeight: 1.4,
+          }}
+        >
+          <AlertCircleIcon size={18} style={{ flexShrink: 0 }} />
+          <span>{error}</span>
+        </div>
+      )}
 
       <Button
         type="submit"

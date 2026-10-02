@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input, MailIcon, LockIcon, UserIcon } from '../ui';
+import { Button, Input, MailIcon, LockIcon, UserIcon, AlertCircleIcon } from '../ui';
 import { authApi } from '../../services/authApi';
 import type { AuthSession } from '../../types/auth';
 
@@ -25,11 +25,6 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => 
       return;
     }
 
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -42,7 +37,11 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => 
 
       onSuccess(session);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al configurar administrador');
+      if (err instanceof Error && err.message === 'Failed to fetch') {
+        setError('No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Error al registrar administrador');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -55,7 +54,10 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => 
           label="Nombre(s)"
           placeholder="Ej. Roberto"
           value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
+          onChange={(e) => {
+            setFirstName(e.target.value);
+            if (error) setError(null);
+          }}
           required
           leftIcon={<UserIcon size={18} />}
         />
@@ -64,7 +66,10 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => 
           label="Apellidos"
           placeholder="Ej. González"
           value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
+          onChange={(e) => {
+            setLastName(e.target.value);
+            if (error) setError(null);
+          }}
           required
           leftIcon={<UserIcon size={18} />}
         />
@@ -75,7 +80,10 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => 
         type="email"
         placeholder="admin@restaurante.com"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          if (error) setError(null);
+        }}
         required
         leftIcon={<MailIcon size={18} />}
       />
@@ -86,7 +94,10 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => 
           type="password"
           placeholder="Mínimo 8 caracteres"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (error) setError(null);
+          }}
           required
           isPasswordToggleable
           leftIcon={<LockIcon size={18} />}
@@ -97,15 +108,39 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => 
           type="password"
           placeholder="Repite la clave"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            if (error) setError(null);
+          }}
           required
           isPasswordToggleable
           leftIcon={<LockIcon size={18} />}
-          error={error || undefined}
         />
       </div>
 
-      <div style={{ marginTop: '8px' }}>
+      {error && (
+        <div
+          role="alert"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 12px',
+            backgroundColor: 'var(--color-error-bg)',
+            color: 'var(--color-error)',
+            border: '1px solid var(--color-error)',
+            borderRadius: 'var(--radius-control)',
+            fontSize: '13px',
+            fontWeight: 500,
+            lineHeight: 1.4,
+          }}
+        >
+          <AlertCircleIcon size={18} style={{ flexShrink: 0 }} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div style={{ marginTop: '4px' }}>
         <Button
           type="submit"
           variant="primary"
@@ -113,7 +148,7 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({ onSuccess }) => 
           fullWidth
           isLoading={isLoading}
         >
-          Configurar Administrador Inicial
+          Registrar Administrador
         </Button>
       </div>
     </form>

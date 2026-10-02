@@ -21,6 +21,7 @@ export const Tabs: React.FC<TabsProps> = ({
 }) => {
   return (
     <div
+      role="tablist"
       style={{
         display: 'flex',
         borderBottom: '1px solid var(--color-border)',
@@ -34,6 +35,8 @@ export const Tabs: React.FC<TabsProps> = ({
           <button
             key={tab.id}
             type="button"
+            role="tab"
+            aria-selected={isActive}
             onClick={() => onChange(tab.id)}
             style={{
               flex: fullWidth ? 1 : 'none',

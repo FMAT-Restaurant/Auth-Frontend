@@ -154,6 +154,22 @@ async function authenticatedFetch(
   return res;
 }
 
+export function formatErrorMessage(data: unknown, fallback: string): string {
+  if (data && typeof data === 'object') {
+    const errorData = data as { message?: string | string[]; error?: string };
+    if (Array.isArray(errorData.message)) {
+      return errorData.message.join('. ');
+    }
+    if (typeof errorData.message === 'string' && errorData.message.trim()) {
+      return errorData.message;
+    }
+    if (typeof errorData.error === 'string' && errorData.error.trim()) {
+      return errorData.error;
+    }
+  }
+  return fallback;
+}
+
 export const authApi = {
   getApiBase(): string {
     return API_BASE;
@@ -166,9 +182,9 @@ export const authApi = {
       body: JSON.stringify({ identifier: identifier.trim(), password }),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data.message || 'Error al iniciar sesión');
+      throw new Error(formatErrorMessage(data, 'Error al iniciar sesión'));
     }
 
     const roleCodes: string[] = data.user.roles || [];
@@ -207,9 +223,9 @@ export const authApi = {
       body: JSON.stringify(params),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data.message || 'Error al configurar administrador');
+      throw new Error(formatErrorMessage(data, 'Error al configurar administrador'));
     }
 
     const fullName = `${params.firstName || ''} ${params.lastName || ''}`.trim() || 'Administrador Principal';
@@ -242,9 +258,9 @@ export const authApi = {
       body: JSON.stringify({ refreshToken }),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data.message || 'Error al renovar sesión');
+      throw new Error(formatErrorMessage(data, 'Error al renovar sesión'));
     }
 
     return {
@@ -270,9 +286,9 @@ export const authApi = {
       token,
     );
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data.message || 'Error al actualizar contraseña');
+      throw new Error(formatErrorMessage(data, 'Error al actualizar contraseña'));
     }
 
     return { accessToken: data.accessToken };
@@ -281,9 +297,9 @@ export const authApi = {
   async getMe(token?: string): Promise<User> {
     const res = await authenticatedFetch('/auth/me', {}, token);
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data.message || 'Error al obtener sesión');
+      throw new Error(formatErrorMessage(data, 'Error al obtener sesión'));
     }
 
     const roleCodes = (data.roles || []).map((r: { code?: string } | string) =>
@@ -328,9 +344,9 @@ export const authApi = {
       token,
     );
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data.message || 'Error al actualizar perfil');
+      throw new Error(formatErrorMessage(data, 'Error al actualizar perfil'));
     }
 
     return data;
@@ -345,9 +361,9 @@ export const authApi = {
       token,
     );
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data.message || 'Error al eliminar la cuenta');
+      throw new Error(formatErrorMessage(data, 'Error al eliminar la cuenta'));
     }
 
     return data;

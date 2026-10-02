@@ -17,7 +17,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({
 
   const tabs: TabItem[] = [
     { id: 'login', label: 'Iniciar Sesión' },
-    { id: 'setup', label: 'Configurar Admin' },
+    { id: 'setup', label: 'Registrar Admin' },
   ];
 
   return (

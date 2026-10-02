@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal, Input, Button, LockIcon, ShieldIcon } from '../ui';
+import { Modal, Input, Button, LockIcon, ShieldIcon, AlertCircleIcon } from '../ui';
 import { authApi } from '../../services/authApi';
 import type { User } from '../../types/auth';
 
@@ -126,12 +126,36 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           type="password"
           placeholder="Repite la nueva contraseña"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            if (error) setError(null);
+          }}
           required
           isPasswordToggleable
           leftIcon={<LockIcon size={18} />}
-          error={error || undefined}
         />
+
+        {error && (
+          <div
+            role="alert"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 12px',
+              backgroundColor: 'var(--color-error-bg)',
+              color: 'var(--color-error)',
+              border: '1px solid var(--color-error)',
+              borderRadius: 'var(--radius-control)',
+              fontSize: '13px',
+              fontWeight: 500,
+              lineHeight: 1.4,
+            }}
+          >
+            <AlertCircleIcon size={18} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
+          </div>
+        )}
       </form>
     </Modal>
   );
