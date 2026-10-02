@@ -1,4 +1,4 @@
-# 1. Etapa de compilación
+# Build stage
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -7,9 +7,14 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+# Set default API base URL for container environment
+ARG VITE_API_BASE_URL=/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 RUN npm run build
 
-# 2. Etapa de producción con Nginx
+# Production stage with Nginx
 FROM nginx:alpine AS runner
 
 COPY --from=builder /app/dist /usr/share/nginx/html
