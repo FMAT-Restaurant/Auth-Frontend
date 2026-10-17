@@ -31,13 +31,13 @@ export const AuthCard: React.FC<AuthCardProps> = ({
   }, []);
 
   useEffect(() => {
-    fetchStatus();
+    void fetchStatus();
   }, [fetchStatus]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId as 'login' | 'setup');
     if (tabId === 'setup') {
-      fetchStatus();
+      void fetchStatus();
     }
   };
 

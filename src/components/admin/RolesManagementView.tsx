@@ -48,7 +48,7 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
   }, [token]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
   const handleTogglePermission = (code: string) => {

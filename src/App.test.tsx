@@ -1,8 +1,14 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import App from './App';
+import { authStorage } from './services/authStorage';
 
 describe('App Component', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    authStorage.clearSession();
+  });
+
   it('renders the login header correctly', () => {
     render(<App />);
     expect(screen.getByText('FMAT Restaurant')).toBeInTheDocument();
@@ -35,5 +41,36 @@ describe('App Component', () => {
 
     expect(idInput.value).toBe('M000104');
     expect(passwordInput.value).toBe('Temp123!');
+  });
+
+  it('toggles theme on login screen and renders authenticated modules and logout', () => {
+    localStorage.setItem(
+      'fmat_restaurant_auth_session',
+      JSON.stringify({
+        accessToken: 'tok-admin',
+        user: {
+          id: '1',
+          userType: 'ADMIN',
+          staffId: 'ADMIN',
+          email: 'admin@fmat.com',
+          displayName: 'Admin FMAT',
+          roleLabel: 'Administrador',
+          roles: ['ADMINISTRADOR'],
+          permissions: ['*'],
+        },
+      }),
+    );
+
+    render(<App />);
+    expect(screen.getByText('Bienvenido, Admin FMAT')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Personal y Roles'));
+    expect(screen.getByText('Control de Personal y Accesos')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle('Ver perfil y configuración'));
+    expect(screen.getByText('Perfil y Configuración')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Sala'));
+    fireEvent.click(screen.getByText('Cerrar sesión'));
   });
 });
