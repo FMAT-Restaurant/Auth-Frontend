@@ -72,7 +72,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
   }, [token]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
   const handleToggleRole = (code: string) => {
@@ -672,7 +672,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      navigator.clipboard.writeText(createdCredentials.staffId);
+                      void navigator.clipboard.writeText(createdCredentials.staffId);
                       setIsCopiedId(true);
                       setTimeout(() => setIsCopiedId(false), 2000);
                     }}
@@ -699,7 +699,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
                       size="sm"
                       onClick={() => {
                         if (createdCredentials.temporaryPassword) {
-                          navigator.clipboard.writeText(createdCredentials.temporaryPassword);
+                          void navigator.clipboard.writeText(createdCredentials.temporaryPassword);
                           setIsCopiedTemp(true);
                           setTimeout(() => setIsCopiedTemp(false), 2000);
                         }

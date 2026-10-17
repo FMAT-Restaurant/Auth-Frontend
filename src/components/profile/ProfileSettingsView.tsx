@@ -23,6 +23,29 @@ interface ProfileSettingsViewProps {
   onLogout: () => void;
 }
 
+const SectionHeader: React.FC<{ icon: React.ReactNode; title: string }> = ({ icon, title }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+    <div
+      style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: 'var(--radius-control)',
+        backgroundColor: 'var(--color-primary-soft)',
+        color: 'var(--color-primary)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      {icon}
+    </div>
+    <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
+      {title}
+    </h2>
+  </div>
+);
+
 export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   currentUser,
   token,
@@ -189,32 +212,9 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
         </h1>
       </div>
 
-      {/* SECCIÓN 1: DATOS PERSONALES */}
       <Card padding="lg">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: 'var(--radius-control)',
-              backgroundColor: 'var(--color-primary-soft)',
-              color: 'var(--color-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <UserIcon size={22} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
-              Información Personal
-            </h2>
-          </div>
-        </div>
+        <SectionHeader icon={<UserIcon size={22} />} title="Información Personal" />
 
-        {/* Notificación informativa para personal operativo */}
         {!isAdmin && (
           <div
             style={{
@@ -321,115 +321,74 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
         </form>
       </Card>
 
-      {/* SECCIÓN 2: APARIENCIA DEL SISTEMA (MODO OSCURO) */}
       <Card padding="lg">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: 'var(--radius-control)',
-              backgroundColor: 'var(--color-primary-soft)',
-              color: 'var(--color-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            {currentTheme === 'dark' ? <MoonIcon size={22} /> : <SunIcon size={22} />}
-          </div>
-          <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
-              Apariencia y Tema
-            </h2>
-          </div>
-        </div>
+        <SectionHeader
+          icon={currentTheme === 'dark' ? <MoonIcon size={22} /> : <SunIcon size={22} />}
+          title="Apariencia y Tema"
+        />
 
         <div className="fmat-grid-2">
-          {/* Opción Modo Claro */}
-          <button
-            type="button"
-            onClick={() => handleThemeChange('light')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              padding: '16px 20px',
-              borderRadius: 'var(--radius-card)',
-              border: `2px solid ${currentTheme === 'light' ? 'var(--color-primary)' : 'var(--color-border)'}`,
-              backgroundColor: currentTheme === 'light' ? 'var(--color-primary-soft)' : 'var(--color-surface)',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <div
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                backgroundColor: currentTheme === 'light' ? 'var(--color-primary)' : 'var(--color-canvas)',
-                color: currentTheme === 'light' ? '#FFFFFF' : 'var(--color-text)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <SunIcon size={22} />
-            </div>
-            <div>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-ink)' }}>
-                Modo Claro
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-                Interfaz con fondo brillante y alto contraste
-              </div>
-            </div>
-          </button>
-
-          {/* Opción Modo Oscuro */}
-          <button
-            type="button"
-            onClick={() => handleThemeChange('dark')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              padding: '16px 20px',
-              borderRadius: 'var(--radius-card)',
-              border: `2px solid ${currentTheme === 'dark' ? 'var(--color-primary)' : 'var(--color-border)'}`,
-              backgroundColor: currentTheme === 'dark' ? 'var(--color-primary-soft)' : 'var(--color-surface)',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <div
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                backgroundColor: currentTheme === 'dark' ? 'var(--color-primary)' : 'var(--color-canvas)',
-                color: currentTheme === 'dark' ? '#FFFFFF' : 'var(--color-text)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <MoonIcon size={22} />
-            </div>
-            <div>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-ink)' }}>
-                Modo Oscuro
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-                Obsidian cálido, acentos cobre quemado y alto contraste
-              </div>
-            </div>
-          </button>
+          {(
+            [
+              {
+                id: 'light',
+                title: 'Modo Claro',
+                description: 'Interfaz con fondo brillante y alto contraste',
+                icon: <SunIcon size={22} />,
+              },
+              {
+                id: 'dark',
+                title: 'Modo Oscuro',
+                description: 'Obsidian cálido, acentos cobre quemado y alto contraste',
+                icon: <MoonIcon size={22} />,
+              },
+            ] as const
+          ).map((option) => {
+            const isSelected = currentTheme === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => handleThemeChange(option.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '16px 20px',
+                  borderRadius: 'var(--radius-card)',
+                  border: `2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                  backgroundColor: isSelected ? 'var(--color-primary-soft)' : 'var(--color-surface)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <div
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '50%',
+                    backgroundColor: isSelected ? 'var(--color-primary)' : 'var(--color-canvas)',
+                    color: isSelected ? '#FFFFFF' : 'var(--color-text)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {option.icon}
+                </div>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-ink)' }}>
+                    {option.title}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
+                    {option.description}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </Card>
 

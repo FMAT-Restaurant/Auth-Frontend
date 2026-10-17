@@ -68,7 +68,7 @@ export const StaffDetailDrawer: React.FC<StaffDetailDrawerProps> = ({
 
   const handleCopyPassword = () => {
     if (tempPassword) {
-      navigator.clipboard.writeText(tempPassword);
+      void navigator.clipboard.writeText(tempPassword);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2500);
     }
@@ -76,7 +76,7 @@ export const StaffDetailDrawer: React.FC<StaffDetailDrawerProps> = ({
 
   const handleCopyStaffId = () => {
     if (collaborator.staffId) {
-      navigator.clipboard.writeText(collaborator.staffId);
+      void navigator.clipboard.writeText(collaborator.staffId);
       setIsStaffIdCopied(true);
       setTimeout(() => setIsStaffIdCopied(false), 2500);
     }
@@ -288,7 +288,7 @@ export const StaffDetailDrawer: React.FC<StaffDetailDrawerProps> = ({
             padding: '16px',
             borderRadius: 'var(--radius-control)',
             backgroundColor: tempPassword ? 'var(--color-surface-elevated)' : 'var(--color-canvas)',
-            border: tempPassword ? '1px solid var(--color-border)' : '1px solid var(--color-border)',
+            border: '1px solid var(--color-border)',
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
