@@ -208,6 +208,25 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
     return res;
   };
 
+  const handleToggleStaffStatus = async (member: User, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!token) return;
+    const newStatus = !member.isActive;
+    try {
+      await authApi.updateStaffStatus(member.id, newStatus, token);
+      setStaffList((prev) =>
+        prev.map((s) => (s.id === member.id ? { ...s, isActive: newStatus } : s)),
+      );
+      if (selectedCollaborator?.id === member.id) {
+        setSelectedCollaborator((prev) => (prev ? { ...prev, isActive: newStatus } : null));
+      }
+      setSuccessBanner(`Colaborador ${member.displayName} ${newStatus ? 'activado' : 'desactivado'} exitosamente.`);
+      setTimeout(() => setSuccessBanner(null), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al actualizar estado del colaborador');
+    }
+  };
+
   const handleDeleteCollaborator = async (id: string) => {
     if (!token) return;
     await authApi.deleteStaff(id, token);
@@ -518,6 +537,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Staff ID</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Colaborador</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Roles asignados</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Estado</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>Estado de clave</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)', textAlign: 'right' }}>Acciones</th>
                     </tr>
@@ -543,7 +563,28 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
                           {member.staffId}
                         </td>
                         <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-ink)' }}>
-                          {member.displayName}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span>{member.displayName}</span>
+                            {member.passwordResetRequested && (
+                              <span
+                                title="Solicitó restablecimiento de contraseña"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  backgroundColor: 'rgba(234, 88, 12, 0.12)',
+                                  color: '#c2410c',
+                                  border: '1px solid rgba(234, 88, 12, 0.3)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  padding: '2px 6px',
+                                }}
+                              >
+                                🔔 Solicitó restablecimiento
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -566,6 +607,37 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
                           </div>
                         </td>
                         <td style={{ padding: '12px 16px' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleStaffStatus(member, e)}
+                            title={member.isActive ? 'Clic para desactivar colaborador' : 'Clic para activar colaborador'}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '4px 10px',
+                              borderRadius: '9999px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              border: member.isActive ? '1px solid #10b981' : '1px solid #9ca3af',
+                              backgroundColor: member.isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                              color: member.isActive ? '#047857' : '#4b5563',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                backgroundColor: member.isActive ? '#10b981' : '#9ca3af',
+                              }}
+                            />
+                            {member.isActive ? 'Activo' : 'Inactivo'}
+                          </button>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
                           <span
                             style={{
                               display: 'inline-flex',
@@ -584,7 +656,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
                                 backgroundColor: member.mustChangePassword ? 'var(--color-warning)' : 'var(--color-success)',
                               }}
                             />
-                            {member.mustChangePassword ? 'Clave provisional (Ver)' : 'Activo'}
+                            {member.mustChangePassword ? 'Clave provisional (Ver)' : 'Establecida'}
                           </span>
                         </td>
                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>

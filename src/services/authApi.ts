@@ -39,6 +39,7 @@ export interface BackendStaffItem {
   isActive: boolean;
   passwordStatus: string;
   temporaryPassword?: string | null;
+  passwordResetRequested?: boolean;
   createdAt?: string;
 }
 
@@ -186,6 +187,21 @@ export const authApi = {
     } catch {
       return { configured: false };
     }
+  },
+
+  async requestPasswordReset(identifier: string): Promise<{ message: string }> {
+    const res = await fetch(`${API_BASE}/auth/request-password-reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: identifier.trim() }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(formatErrorMessage(data, 'Error al solicitar restablecimiento de contraseña'));
+    }
+
+    return data;
   },
 
   async login(identifier: string, password: string): Promise<AuthSession> {
@@ -441,6 +457,7 @@ export const authApi = {
         isActive: item.isActive,
         passwordStatus: item.passwordStatus as 'TEMPORARY' | 'ACTIVE',
         temporaryPassword: item.temporaryPassword,
+        passwordResetRequested: Boolean(item.passwordResetRequested),
         mustChangePassword: item.passwordStatus === 'TEMPORARY',
       };
     });
@@ -485,6 +502,7 @@ export const authApi = {
       isActive: data.isActive,
       passwordStatus: data.passwordStatus,
       temporaryPassword: data.temporaryPassword,
+      passwordResetRequested: Boolean(data.passwordResetRequested),
       mustChangePassword: data.passwordStatus === 'TEMPORARY',
     };
   },

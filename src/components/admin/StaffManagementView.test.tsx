@@ -12,6 +12,7 @@ vi.mock('../../services/authApi', () => ({
     createStaff: vi.fn(),
     createRole: vi.fn(),
     updateStaff: vi.fn(),
+    updateStaffStatus: vi.fn(),
     resetStaffPassword: vi.fn(),
     deleteStaff: vi.fn(),
   },
@@ -189,6 +190,37 @@ describe('StaffManagementView', () => {
     fireEvent.click(screen.getByText('Roles y Permisos por Microservicio'));
     await waitFor(() => {
       expect(screen.getByText('+ Crear Nuevo Rol')).toBeInTheDocument();
+    });
+  });
+
+  it('displays password reset requested badge and toggles staff active status', async () => {
+    const staffWithResetRequest: User[] = [
+      {
+        ...mockStaff[0],
+        passwordResetRequested: true,
+      },
+    ];
+    vi.mocked(authApi.getAllStaff).mockResolvedValueOnce(staffWithResetRequest);
+    vi.mocked(authApi.updateStaffStatus).mockResolvedValueOnce(undefined);
+
+    render(<StaffManagementView currentUser={mockAdmin} token="tok-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Juan Pérez')).toBeInTheDocument();
+    });
+
+    // Badge should be visible
+    expect(screen.getByText('🔔 Solicitó restablecimiento')).toBeInTheDocument();
+
+    // Active button should be green/visible
+    const statusBtn = screen.getByRole('button', { name: /Activo/i });
+    expect(statusBtn).toBeInTheDocument();
+
+    fireEvent.click(statusBtn);
+
+    await waitFor(() => {
+      expect(authApi.updateStaffStatus).toHaveBeenCalledWith('s1', false, 'tok-123');
+      expect(screen.getByText(/desactivado exitosamente/i)).toBeInTheDocument();
     });
   });
 });

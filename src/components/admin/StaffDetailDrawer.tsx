@@ -352,13 +352,49 @@ export const StaffDetailDrawer: React.FC<StaffDetailDrawerProps> = ({
             </p>
           )}
 
-          {/* Botón Protegido para Restablecer Contraseña */}
-          <div style={{ paddingTop: '4px' }}>
+          {/* Indicador y Botón Condicional para Restablecer Contraseña */}
+          {collaborator?.passwordResetRequested ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 12px',
+                backgroundColor: 'rgba(234, 88, 12, 0.12)',
+                border: '1px solid rgba(234, 88, 12, 0.3)',
+                borderRadius: 'var(--radius-control)',
+                color: 'var(--color-primary)',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
+              <span>🔔 Este colaborador solicitó el restablecimiento de su contraseña.</span>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 12px',
+                backgroundColor: 'var(--color-surface)',
+                border: '1px dashed var(--color-border)',
+                borderRadius: 'var(--radius-control)',
+                fontSize: '11px',
+                color: 'var(--color-muted)',
+              }}
+            >
+              <span>🔒 El colaborador no ha solicitado restablecer su contraseña.</span>
+            </div>
+          )}
+
+          <div style={{ paddingTop: '2px' }}>
             <Button
               type="button"
-              variant="outline"
+              variant={collaborator?.passwordResetRequested ? 'primary' : 'outline'}
               size="sm"
               fullWidth
+              disabled={!collaborator?.passwordResetRequested}
               onClick={() => setShowResetModal(true)}
               style={{
                 display: 'flex',
