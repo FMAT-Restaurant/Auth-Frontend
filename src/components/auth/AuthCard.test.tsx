@@ -86,6 +86,33 @@ describe('AuthCard Component - Error Presentation & Setup Status UX', () => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
+    it('displays ambiguous user-friendly error when network or server is offline', async () => {
+      vi.mocked(authApi.login).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      const { container } = render(
+        <AuthCard
+          onLoginSuccess={mockOnLoginSuccess}
+          onRequirePasswordChange={mockOnRequirePasswordChange}
+        />,
+      );
+
+      const idInput = screen.getByLabelText(/Staff ID/i);
+      const passwordInput = screen.getByLabelText(/Contraseña/i);
+      const form = container.querySelector('form')!;
+
+      fireEvent.change(idInput, { target: { value: 'M000001' } });
+      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+      fireEvent.submit(form);
+
+      await waitFor(() => {
+        const alert = screen.getByRole('alert');
+        expect(alert).toBeInTheDocument();
+        expect(alert).toHaveTextContent(
+          'Estamos teniendo problemas actualmente, intente de nuevo más tarde.',
+        );
+      });
+    });
+
     it('handles staff password reset request flow with success notification', async () => {
       vi.mocked(authApi.requestPasswordReset).mockResolvedValueOnce({
         message: 'Solicitud de cambio de contraseña enviada exitosamente',

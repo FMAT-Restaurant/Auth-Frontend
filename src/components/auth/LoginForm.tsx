@@ -34,7 +34,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       const res = await authApi.requestPasswordReset(forgotStaffId.trim());
       setForgotSuccessMsg(res.message || 'Solicitud de cambio de contraseña enviada exitosamente');
     } catch (err: unknown) {
-      setForgotError(err instanceof Error ? err.message : 'Error al enviar la solicitud');
+      if (
+        err instanceof Error &&
+        (err.message === 'Failed to fetch' ||
+          err.message.toLowerCase().includes('failed to fetch') ||
+          err.message.toLowerCase().includes('network') ||
+          err.name === 'TypeError')
+      ) {
+        setForgotError('Estamos teniendo problemas actualmente, intente de nuevo más tarde.');
+      } else {
+        setForgotError(
+          err instanceof Error
+            ? err.message
+            : 'Estamos teniendo problemas actualmente, intente de nuevo más tarde.',
+        );
+      }
     } finally {
       setIsSubmittingForgot(false);
     }
@@ -55,10 +69,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         onSuccess(session);
       }
     } catch (err: unknown) {
-      if (err instanceof Error && err.message === 'Failed to fetch') {
-        setError('No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.');
+      if (
+        err instanceof Error &&
+        (err.message === 'Failed to fetch' ||
+          err.message.toLowerCase().includes('failed to fetch') ||
+          err.message.toLowerCase().includes('network') ||
+          err.name === 'TypeError')
+      ) {
+        setError('Estamos teniendo problemas actualmente, intente de nuevo más tarde.');
       } else {
-        setError(err instanceof Error ? err.message : 'Error al conectar con el servidor de autenticación');
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Estamos teniendo problemas actualmente, intente de nuevo más tarde.',
+        );
       }
     } finally {
       setIsLoading(false);

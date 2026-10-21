@@ -47,8 +47,14 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({
 
       onSuccess(session);
     } catch (err: unknown) {
-      if (err instanceof Error && err.message === 'Failed to fetch') {
-        setError('No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.');
+      if (
+        err instanceof Error &&
+        (err.message === 'Failed to fetch' ||
+          err.message.toLowerCase().includes('failed to fetch') ||
+          err.message.toLowerCase().includes('network') ||
+          err.name === 'TypeError')
+      ) {
+        setError('Estamos teniendo problemas actualmente, intente de nuevo más tarde.');
       } else {
         setError(err instanceof Error ? err.message : 'Error al registrar administrador');
       }
