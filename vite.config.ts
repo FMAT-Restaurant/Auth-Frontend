@@ -1,11 +1,28 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import federation from '@originjs/vite-plugin-federation';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    federation({
+      name: 'auth_shell',
+      remotes: {
+        salaApp: 'http://localhost:5174/assets/remoteEntry.js',
+        menuApp: 'http://localhost:5175/assets/remoteEntry.js',
+        inventarioApp: 'http://localhost:5176/assets/remoteEntry.js',
+        ordenesApp: 'http://localhost:5177/assets/remoteEntry.js',
+        cajaApp: 'http://localhost:5178/assets/remoteEntry.js',
+      },
+      shared: ['react', 'react-dom'],
+    }),
+  ],
   server: {
     port: 3000,
     host: true,
+  },
+  build: {
+    target: 'esnext',
   },
   // @ts-expect-error Vitest config is extended on Vite UserConfig
   test: {

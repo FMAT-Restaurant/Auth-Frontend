@@ -168,6 +168,10 @@ h1, h2, h3, h4, h5, h6 {
   transition: margin-left 0.2s ease-in-out, padding 0.2s ease-in-out;
 }
 
+.fmat-layout-main--flush {
+  padding: 0 !important;
+}
+
 @media (max-width: 1023px) {
   .fmat-sidebar {
     transform: translateX(-100%);
@@ -203,6 +207,10 @@ h1, h2, h3, h4, h5, h6 {
     margin-left: 0 !important;
     padding: 72px 16px 32px 16px !important;
     width: 100%;
+  }
+
+  .fmat-layout-main--flush {
+    padding: 60px 0 0 0 !important;
   }
 }
 

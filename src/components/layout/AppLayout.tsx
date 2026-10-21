@@ -114,7 +114,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       />
 
       {/* Área principal de contenido responsiva */}
-      <main className="fmat-layout-main">
+      <main className={`fmat-layout-main ${['sala', 'menu', 'inventario', 'ordenes', 'caja'].includes(activeModule) ? 'fmat-layout-main--flush' : ''}`}>
         {children}
       </main>
     </div>

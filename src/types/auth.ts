@@ -53,3 +53,10 @@ export interface PermissionGroup {
     description: string;
   }[];
 }
+
+
+export interface FederatedModuleProps {
+  token?: string;
+  currentUser?: User;
+  theme?: 'light' | 'dark';
+}

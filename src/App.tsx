@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { AuthCard } from './components/auth/AuthCard';
 import { ChangePasswordModal } from './components/auth/ChangePasswordModal';
 import { AppLayout } from './components/layout/AppLayout';
@@ -101,7 +101,7 @@ export const App: React.FC = () => {
     document.documentElement.setAttribute('data-theme', nextTheme);
   };
 
-  // 1. Pantalla de Autenticación (si no hay sesión)
+  // 1. Pantalla de AutenticaciÃ³n (si no hay sesiÃ³n)
   if (!currentSession) {
     return (
       <div
@@ -162,7 +162,7 @@ export const App: React.FC = () => {
 
   const { user } = currentSession;
 
-  // 2. Renderizado de la vista según el módulo activo en la Sidebar
+  // 2. Renderizado de la vista segÃºn el mÃ³dulo activo en la Sidebar
   const renderActiveModuleContent = () => {
     switch (activeModule) {
       case 'inicio':
@@ -185,6 +185,7 @@ export const App: React.FC = () => {
             token={currentSession.accessToken}
             onUpdateUser={handleUpdateUser}
             onLogout={handleLogout}
+            onThemeChange={(th) => setCurrentTheme(th)}
           />
         );
       case 'inventario':
@@ -193,7 +194,15 @@ export const App: React.FC = () => {
       case 'ordenes':
       case 'caja':
       default:
-        return <ModulePlaceholderView moduleId={activeModule} currentUser={user} />;
+        return (
+          <ModulePlaceholderView
+            key={activeModule}
+            moduleId={activeModule}
+            currentUser={user}
+            token={currentSession.accessToken}
+            theme={currentTheme}
+          />
+        );
     }
   };
 

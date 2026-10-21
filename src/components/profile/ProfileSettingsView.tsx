@@ -21,6 +21,7 @@ interface ProfileSettingsViewProps {
   token?: string;
   onUpdateUser: (user: User) => void;
   onLogout: () => void;
+  onThemeChange?: (theme: 'light' | 'dark') => void;
 }
 
 const SectionHeader: React.FC<{ icon: React.ReactNode; title: string }> = ({ icon, title }) => (
@@ -51,6 +52,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
   token,
   onUpdateUser,
   onLogout,
+  onThemeChange,
 }) => {
   const isAdmin =
     currentUser.userType === 'ADMIN' ||
@@ -114,6 +116,7 @@ export const ProfileSettingsView: React.FC<ProfileSettingsViewProps> = ({
     setCurrentTheme(theme);
     localStorage.setItem('fmat_theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
+    if (onThemeChange) onThemeChange(theme);
   };
 
   const getFriendlyErrorMessage = (err: unknown, defaultMessage: string): string => {
