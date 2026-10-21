@@ -14,6 +14,7 @@ export interface User {
   isActive?: boolean;
   passwordStatus?: 'TEMPORARY' | 'ACTIVE';
   temporaryPassword?: string | null;
+  passwordResetRequested?: boolean;
 }
 
 export interface AuthSession {

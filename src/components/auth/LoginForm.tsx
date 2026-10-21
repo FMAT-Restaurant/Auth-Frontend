@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input, UserIcon, MailIcon, LockIcon, AlertCircleIcon } from '../ui';
+import { Button, Input, UserIcon, MailIcon, LockIcon, AlertCircleIcon, Modal, CheckIcon } from '../ui';
 import { authApi } from '../../services/authApi';
 import type { User, AuthSession } from '../../types/auth';
 
@@ -18,6 +18,42 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Estado para solicitud de restablecimiento de contraseña
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotStaffId, setForgotStaffId] = useState('');
+  const [isSubmittingForgot, setIsSubmittingForgot] = useState(false);
+  const [forgotSuccessMsg, setForgotSuccessMsg] = useState<string | null>(null);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+
+  const handleRequestPasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotStaffId.trim()) return;
+    setIsSubmittingForgot(true);
+    setForgotError(null);
+    try {
+      const res = await authApi.requestPasswordReset(forgotStaffId.trim());
+      setForgotSuccessMsg(res.message || 'Solicitud de cambio de contraseña enviada exitosamente');
+    } catch (err: unknown) {
+      if (
+        err instanceof Error &&
+        (err.message === 'Failed to fetch' ||
+          err.message.toLowerCase().includes('failed to fetch') ||
+          err.message.toLowerCase().includes('network') ||
+          err.name === 'TypeError')
+      ) {
+        setForgotError('Estamos teniendo problemas actualmente, intente de nuevo más tarde.');
+      } else {
+        setForgotError(
+          err instanceof Error
+            ? err.message
+            : 'Estamos teniendo problemas actualmente, intente de nuevo más tarde.',
+        );
+      }
+    } finally {
+      setIsSubmittingForgot(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -33,10 +69,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         onSuccess(session);
       }
     } catch (err: unknown) {
-      if (err instanceof Error && err.message === 'Failed to fetch') {
-        setError('No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.');
+      if (
+        err instanceof Error &&
+        (err.message === 'Failed to fetch' ||
+          err.message.toLowerCase().includes('failed to fetch') ||
+          err.message.toLowerCase().includes('network') ||
+          err.name === 'TypeError')
+      ) {
+        setError('Estamos teniendo problemas actualmente, intente de nuevo más tarde.');
       } else {
-        setError(err instanceof Error ? err.message : 'Error al conectar con el servidor de autenticación');
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Estamos teniendo problemas actualmente, intente de nuevo más tarde.',
+        );
       }
     } finally {
       setIsLoading(false);
@@ -44,7 +90,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Selector de Modo: Personal vs Gerente */}
       <div
         style={{
@@ -185,6 +232,58 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         leftIcon={<LockIcon size={18} />}
       />
 
+      {isStaff && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-8px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setForgotStaffId(identifier.trim().toUpperCase());
+              setIsForgotModalOpen(true);
+              setForgotSuccessMsg(null);
+              setForgotError(null);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--color-primary)',
+              fontSize: '12px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              padding: '2px 0',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = 'underline';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = 'none';
+            }}
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
+        </div>
+      )}
+
+      {forgotSuccessMsg && (
+        <div
+          role="status"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 12px',
+            backgroundColor: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            color: '#059669',
+            borderRadius: 'var(--radius-control)',
+            fontSize: '13px',
+            fontWeight: 600,
+          }}
+        >
+          <CheckIcon size={18} style={{ flexShrink: 0 }} />
+          <span>{forgotSuccessMsg}</span>
+        </div>
+      )}
+
       {error && (
         <div
           role="alert"
@@ -202,15 +301,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             lineHeight: 1.4,
           }}
         >
-          <AlertCircleIcon size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            <span>{error}</span>
-            {isStaff && (
-              <span style={{ fontSize: '11px', opacity: 0.9, fontWeight: 400 }}>
-                💡 Tip: Comprueba que tu Staff ID esté completo (ej. M000001) y que la contraseña temporal sea idéntica a la que generó el administrador (respetando mayúsculas, minúsculas y caracteres especiales).
-              </span>
-            )}
-          </div>
+          <AlertCircleIcon size={18} style={{ flexShrink: 0 }} />
+          <span>{error}</span>
         </div>
       )}
 
@@ -224,5 +316,86 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         {isStaff ? 'Iniciar Sesión' : 'Acceder al Panel Administrativo'}
       </Button>
     </form>
+
+    {/* Modal de Solicitud de Restablecimiento de Contraseña para Staff */}
+      <Modal
+        isOpen={isForgotModalOpen}
+        onClose={() => setIsForgotModalOpen(false)}
+        title="¿Olvidaste tu contraseña?"
+        description="Ingresa tu Staff ID para enviar una solicitud de restablecimiento al Administrador."
+        maxWidth="420px"
+      >
+        <form onSubmit={handleRequestPasswordReset} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {forgotSuccessMsg ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div
+                role="status"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: 'var(--radius-control)',
+                  color: '#059669',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                }}
+              >
+                <CheckIcon size={18} />
+                <span>{forgotSuccessMsg}</span>
+              </div>
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                fullWidth
+                onClick={() => setIsForgotModalOpen(false)}
+              >
+                Aceptar
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Input
+                label="Staff ID / Matrícula"
+                placeholder="Ej. M000001"
+                value={forgotStaffId}
+                onChange={(e) => {
+                  setForgotStaffId(e.target.value);
+                  if (forgotError) setForgotError(null);
+                }}
+                required
+                leftIcon={<UserIcon size={18} />}
+              />
+              {forgotError && (
+                <div role="alert" style={{ fontSize: '12px', color: 'var(--color-error)' }}>
+                  {forgotError}
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsForgotModalOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  isLoading={isSubmittingForgot}
+                >
+                  Solicitar restablecimiento
+                </Button>
+              </div>
+            </>
+          )}
+        </form>
+      </Modal>
+    </>
   );
 };

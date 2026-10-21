@@ -100,6 +100,40 @@ describe('StaffDetailDrawer', () => {
     });
   });
 
+  it('keeps reset button disabled when no reset was requested, and enables it when requested', async () => {
+    const { rerender } = render(
+      <StaffDetailDrawer
+        isOpen={true}
+        collaborator={{ ...mockCollaborator, passwordResetRequested: false }}
+        availableRoles={mockRoles}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        onResetPassword={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('🔒 El colaborador no ha solicitado restablecer su contraseña.')).toBeInTheDocument();
+    const resetBtn = screen.getByText('Restablecer nueva contraseña temporal').closest('button');
+    expect(resetBtn).toBeDisabled();
+
+    // Rerender with reset requested
+    rerender(
+      <StaffDetailDrawer
+        isOpen={true}
+        collaborator={{ ...mockCollaborator, passwordResetRequested: true }}
+        availableRoles={mockRoles}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        onResetPassword={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('🔔 Este colaborador solicitó el restablecimiento de su contraseña.')).toBeInTheDocument();
+    expect(resetBtn).not.toBeDisabled();
+  });
+
   it('handles password reset and collaborator deletion modals', async () => {
     const onResetPassword = vi.fn().mockResolvedValue({ temporaryPassword: 'NEW-777' });
     const onDelete = vi.fn().mockResolvedValue(undefined);
@@ -108,7 +142,7 @@ describe('StaffDetailDrawer', () => {
     render(
       <StaffDetailDrawer
         isOpen={true}
-        collaborator={{ ...mockCollaborator, temporaryPassword: null }}
+        collaborator={{ ...mockCollaborator, temporaryPassword: null, passwordResetRequested: true }}
         availableRoles={mockRoles}
         onClose={onClose}
         onSave={vi.fn()}

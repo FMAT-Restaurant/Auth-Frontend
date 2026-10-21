@@ -8,6 +8,7 @@ vi.mock('../../services/authApi', () => ({
     login: vi.fn(),
     setupAdmin: vi.fn(),
     getSetupStatus: vi.fn().mockResolvedValue({ configured: false }),
+    requestPasswordReset: vi.fn(),
   },
 }));
 
@@ -84,6 +85,64 @@ describe('AuthCard Component - Error Presentation & Setup Status UX', () => {
       fireEvent.change(passwordInput, { target: { value: 'newattempt' } });
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
+
+    it('displays ambiguous user-friendly error when network or server is offline', async () => {
+      vi.mocked(authApi.login).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      const { container } = render(
+        <AuthCard
+          onLoginSuccess={mockOnLoginSuccess}
+          onRequirePasswordChange={mockOnRequirePasswordChange}
+        />,
+      );
+
+      const idInput = screen.getByLabelText(/Staff ID/i);
+      const passwordInput = screen.getByLabelText(/Contraseña/i);
+      const form = container.querySelector('form')!;
+
+      fireEvent.change(idInput, { target: { value: 'M000001' } });
+      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+      fireEvent.submit(form);
+
+      await waitFor(() => {
+        const alert = screen.getByRole('alert');
+        expect(alert).toBeInTheDocument();
+        expect(alert).toHaveTextContent(
+          'Estamos teniendo problemas actualmente, intente de nuevo más tarde.',
+        );
+      });
+    });
+
+    it('handles staff password reset request flow with success notification', async () => {
+      vi.mocked(authApi.requestPasswordReset).mockResolvedValueOnce({
+        message: 'Solicitud de cambio de contraseña enviada exitosamente',
+      });
+
+      render(
+        <AuthCard
+          onLoginSuccess={mockOnLoginSuccess}
+          onRequirePasswordChange={mockOnRequirePasswordChange}
+        />,
+      );
+
+      const forgotBtn = screen.getByText('¿Olvidaste tu contraseña?');
+      fireEvent.click(forgotBtn);
+
+      expect(screen.getByText('Solicitar restablecimiento')).toBeInTheDocument();
+
+      const modalInput = screen.getByLabelText(/Staff ID \/ Matrícula/i);
+      fireEvent.change(modalInput, { target: { value: 'M000101' } });
+
+      const submitRequestBtn = screen.getByRole('button', { name: 'Solicitar restablecimiento' });
+      const modalForm = submitRequestBtn.closest('form');
+      if (modalForm) fireEvent.submit(modalForm);
+
+      await waitFor(() => {
+        expect(authApi.requestPasswordReset).toHaveBeenCalledWith('M000101');
+        const banners = screen.getAllByText(/Solicitud de cambio de contraseña enviada exitosamente/i);
+        expect(banners.length).toBeGreaterThan(0);
+      });
+    });
   });
 
   describe('SetupAdminForm - Configured State UX', () => {
@@ -97,8 +156,8 @@ describe('AuthCard Component - Error Presentation & Setup Status UX', () => {
         />,
       );
 
-      const setupTab = screen.getByRole('tab', { name: /Registrar Admin/i });
-      fireEvent.click(setupTab);
+      const setupLink = screen.getByRole('button', { name: /Registrar al administrador/i });
+      fireEvent.click(setupLink);
 
       await waitFor(() => {
         expect(screen.getByText('Ya se configuró un administrador')).toBeInTheDocument();
@@ -129,8 +188,8 @@ describe('AuthCard Component - Error Presentation & Setup Status UX', () => {
         />,
       );
 
-      const setupTab = screen.getByRole('tab', { name: /Registrar Admin/i });
-      fireEvent.click(setupTab);
+      const setupLink = screen.getByRole('button', { name: /Registrar al administrador/i });
+      fireEvent.click(setupLink);
 
       await waitFor(() => {
         expect(screen.getByLabelText(/Correo electrónico del Administrador/i)).toBeInTheDocument();
@@ -150,8 +209,8 @@ describe('AuthCard Component - Error Presentation & Setup Status UX', () => {
       );
 
       // Switch to setup tab
-      const setupTab = screen.getByRole('tab', { name: /Registrar Admin/i });
-      fireEvent.click(setupTab);
+      const setupLink = screen.getByRole('button', { name: /Registrar al administrador/i });
+      fireEvent.click(setupLink);
 
       await waitFor(() => {
         expect(screen.getByLabelText(/Correo electrónico del Administrador/i)).toBeInTheDocument();
@@ -191,8 +250,8 @@ describe('AuthCard Component - Error Presentation & Setup Status UX', () => {
         />,
       );
 
-      const setupTab = screen.getByRole('tab', { name: /Registrar Admin/i });
-      fireEvent.click(setupTab);
+      const setupLink = screen.getByRole('button', { name: /Registrar al administrador/i });
+      fireEvent.click(setupLink);
 
       await waitFor(() => {
         expect(screen.getByLabelText(/Correo electrónico del Administrador/i)).toBeInTheDocument();
