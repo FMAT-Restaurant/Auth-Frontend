@@ -168,8 +168,8 @@ h1, h2, h3, h4, h5, h6 {
   transition: margin-left 0.2s ease-in-out, padding 0.2s ease-in-out;
 }
 
-.fmat-layout-main--flush {
-  padding: 0 !important;
+main.fmat-layout-main.fmat-layout-main--flush {
+  padding: 0;
 }
 
 @media (max-width: 1023px) {
@@ -209,8 +209,8 @@ h1, h2, h3, h4, h5, h6 {
     width: 100%;
   }
 
-  .fmat-layout-main--flush {
-    padding: 60px 0 0 0 !important;
+  main.fmat-layout-main.fmat-layout-main--flush {
+    padding: 60px 0 0 0;
   }
 }
 

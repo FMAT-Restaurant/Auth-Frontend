@@ -124,7 +124,7 @@ class RemoteErrorBoundary extends Component<RemoteErrorBoundaryProps, RemoteErro
             size="md"
             onClick={() => {
               this.setState({ hasError: false, error: null });
-              this.props.onRetry();
+              void this.props.onRetry();
             }}
           >
             <LoaderIcon size={16} />
@@ -170,7 +170,7 @@ export const ModulePlaceholderView: React.FC<ModulePlaceholderViewProps> = ({
 
   // Carga automática inmediata al entrar a la sección o cambiar de módulo
   useEffect(() => {
-    loadModule();
+    void loadModule();
   }, [loadModule]);
 
   // 1. Pantalla de carga automática centrada
@@ -233,7 +233,7 @@ export const ModulePlaceholderView: React.FC<ModulePlaceholderViewProps> = ({
         <p style={{ fontSize: '14px', color: 'var(--color-muted)', maxWidth: '460px', marginBottom: '24px', lineHeight: 1.5 }}>
           No fue posible conectar con el <strong>{info.title}</strong>. El servidor remoto no responde o se encuentra fuera de línea.
         </p>
-        <Button variant="primary" size="md" onClick={loadModule}>
+        <Button variant="primary" size="md" onClick={() => void loadModule()}>
           <LoaderIcon size={16} />
           <span style={{ marginLeft: '8px' }}>Volver a intentar</span>
         </Button>
