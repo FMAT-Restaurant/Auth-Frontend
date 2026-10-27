@@ -163,7 +163,11 @@ export const ModulePlaceholderView: React.FC<ModulePlaceholderViewProps> = ({
       setRemoteComponent(() => LazyRemote);
       setStatus('online');
     } catch (err) {
-      console.error(`Error al conectar con ${info.remoteName}:`, err);
+      // Que el servicio de otro equipo esté apagado es un estado esperado (se muestra
+      // la pantalla "Falló la conexión"), así que se registra como advertencia y no
+      // como error no controlado.
+      const reason = err instanceof Error ? err.message : String(err);
+      console.warn(`[Microfrontends] ${info.remoteName} no disponible en ${remoteEntryUrl} (${reason})`);
       setStatus('offline');
     }
   }, [remoteEntryUrl, info.loadComponent, info.remoteName]);

@@ -249,6 +249,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             if (onCloseMobile) onCloseMobile();
           }}
           title="Ver perfil y configuración"
+          aria-label={`Ver perfil y configuración de ${currentUser.displayName}`}
           style={{
             display: 'flex',
             alignItems: 'center',
