@@ -144,11 +144,11 @@ async function authenticatedFetch(
         const freshAccessToken = await refreshPromise;
         res = await buildRequest(freshAccessToken);
       } catch {
-        authStorage.clearSession();
+        authStorage.expireSession();
         throw new Error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
       }
     } else {
-      authStorage.clearSession();
+      authStorage.expireSession();
       throw new Error('Tu sesión ha expirado o no es válida. Por favor, inicia sesión nuevamente.');
     }
   }
@@ -310,7 +310,7 @@ export const authApi = {
     currentPassword: string,
     newPassword: string,
     token?: string,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<{ accessToken: string; refreshToken?: string }> {
     const res = await authenticatedFetch(
       '/auth/change-initial-password',
       {
@@ -328,7 +328,7 @@ export const authApi = {
       throw new Error(formatErrorMessage(data, 'Error al actualizar contraseña'));
     }
 
-    return { accessToken: data.accessToken };
+    return { accessToken: data.accessToken, refreshToken: data.refreshToken };
   },
 
   async getMe(token?: string): Promise<User> {

@@ -7,6 +7,7 @@ import { StaffManagementView } from './components/admin/StaffManagementView';
 import { ProfileSettingsView } from './components/profile/ProfileSettingsView';
 import { ModulePlaceholderView } from './components/layout/ModulePlaceholderView';
 import { SunIcon, MoonIcon } from './components/ui/Icons';
+import { Modal, Button } from './components/ui';
 import { authStorage } from './services/authStorage';
 import { authApi } from './services/authApi';
 import type { NavModuleId } from './components/layout/Sidebar';
@@ -22,6 +23,7 @@ export const App: React.FC = () => {
   const [tempInitialPassword, setTempInitialPassword] = useState<string | undefined>(undefined);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [activeModule, setActiveModule] = useState<NavModuleId>('inicio');
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
 
   useEffect(() => {
     const savedTheme = (localStorage.getItem('fmat_theme') as 'light' | 'dark') || 'light';
@@ -32,18 +34,26 @@ export const App: React.FC = () => {
       setCurrentSession(newSession);
     });
 
+    // BUG-SEC-001: en lugar de expulsar al usuario de golpe, primero se le avisa
+    const unsubscribeExpired = authStorage.onSessionExpired(() => {
+      setIsSessionExpired(true);
+    });
+
     return () => {
       unsubscribe();
+      unsubscribeExpired();
     };
   }, []);
 
   useEffect(() => {
+    // Una sesión expirada ya no se vuelve a guardar (sus tokens ya fueron borrados)
+    if (isSessionExpired) return;
     if (currentSession) {
       authStorage.saveSession(currentSession);
     } else {
       authStorage.clearSession();
     }
-  }, [currentSession]);
+  }, [currentSession, isSessionExpired]);
 
   const handleLoginSuccess = (session: AuthSession) => {
     setCurrentSession(session);
@@ -57,15 +67,18 @@ export const App: React.FC = () => {
     setIsChangePasswordOpen(true);
   };
 
-  const handlePasswordChangeSuccess = (newToken?: string) => {
+  const handlePasswordChangeSuccess = (newToken?: string, newRefreshToken?: string) => {
     if (tempUser) {
       const activeUser: User = {
         ...tempUser,
         mustChangePassword: false,
       };
       const resolvedToken = newToken || tempToken || currentSession?.accessToken || 'mock_jwt_activated_token';
+      // Se conserva el refresh token: sin él, la sesión no se podía renovar y el
+      // usuario era expulsado al vencer el access token (causa raíz de BUG-SEC-001)
       const newSession: AuthSession = {
         accessToken: resolvedToken,
+        refreshToken: newRefreshToken || currentSession?.refreshToken,
         user: activeUser,
       };
       authStorage.saveSession(newSession);
@@ -86,6 +99,13 @@ export const App: React.FC = () => {
     setTempUser(null);
     setTempToken(undefined);
     setIsChangePasswordOpen(false);
+    setActiveModule('inicio');
+    authStorage.clearSession();
+  };
+
+  const handleSessionExpiredConfirm = () => {
+    setIsSessionExpired(false);
+    setCurrentSession(null);
     setActiveModule('inicio');
     authStorage.clearSession();
   };
@@ -215,6 +235,17 @@ export const App: React.FC = () => {
       onLogout={handleLogout}
     >
       {renderActiveModuleContent()}
+
+      <Modal
+        isOpen={isSessionExpired}
+        title="Tu sesión ha expirado"
+        description="Por seguridad, tu sesión se cerró. Los cambios que no hayas guardado no se enviaron. Inicia sesión de nuevo para continuar."
+        maxWidth="420px"
+      >
+        <Button type="button" variant="primary" size="md" fullWidth onClick={handleSessionExpiredConfirm}>
+          Iniciar sesión de nuevo
+        </Button>
+      </Modal>
     </AppLayout>
   );
 };
