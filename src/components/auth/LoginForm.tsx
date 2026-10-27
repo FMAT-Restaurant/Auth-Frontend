@@ -232,12 +232,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         leftIcon={<LockIcon size={18} />}
       />
 
-      {isStaff && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-8px' }}>
           <button
             type="button"
             onClick={() => {
-              setForgotStaffId(identifier.trim().toUpperCase());
+              setForgotStaffId(isStaff ? identifier.trim().toUpperCase() : '');
               setIsForgotModalOpen(true);
               setForgotSuccessMsg(null);
               setForgotError(null);
@@ -261,7 +260,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             ¿Olvidaste tu contraseña?
           </button>
         </div>
-      )}
 
       {forgotSuccessMsg && (
         <div
@@ -322,9 +320,37 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         isOpen={isForgotModalOpen}
         onClose={() => setIsForgotModalOpen(false)}
         title="¿Olvidaste tu contraseña?"
-        description="Ingresa tu Staff ID para enviar una solicitud de restablecimiento al Administrador."
+        description={
+          isStaff
+            ? 'Ingresa tu Staff ID para enviar una solicitud de restablecimiento al Administrador.'
+            : 'Recuperación de acceso para la cuenta de Gerente / Administrador.'
+        }
         maxWidth="420px"
       >
+        {!isStaff ? (
+          // BUG-AUTH-002: el administrador no tiene Staff ID ni a otro administrador a quien
+          // pedirle el restablecimiento, así que no se le muestra el formulario de personal.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--color-ink)', lineHeight: 1.5, margin: 0 }}>
+              Por seguridad, la contraseña de la cuenta de Administrador no se puede restablecer
+              desde esta pantalla. Contacta al responsable técnico del sistema para recuperar el
+              acceso a tu cuenta.
+            </p>
+            <p style={{ fontSize: '12px', color: 'var(--color-muted)', lineHeight: 1.5, margin: 0 }}>
+              Si eres parte del personal operativo, usa la pestaña <strong>Personal</strong> para
+              solicitar el restablecimiento con tu Staff ID.
+            </p>
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              fullWidth
+              onClick={() => setIsForgotModalOpen(false)}
+            >
+              Entendido
+            </Button>
+          </div>
+        ) : (
         <form onSubmit={handleRequestPasswordReset} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {forgotSuccessMsg ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -395,6 +421,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </>
           )}
         </form>
+        )}
       </Modal>
     </>
   );

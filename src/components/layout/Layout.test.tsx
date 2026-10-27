@@ -149,7 +149,7 @@ describe('Layout, DashboardHomeView, and ChangePasswordModal', () => {
         'NuevaClave123!',
         'temp-tok',
       );
-      expect(onSuccess).toHaveBeenCalledWith('new-jwt');
+      expect(onSuccess).toHaveBeenCalledWith('new-jwt', undefined);
     });
   });
 });

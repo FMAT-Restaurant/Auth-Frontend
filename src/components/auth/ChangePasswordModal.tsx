@@ -9,7 +9,7 @@ interface ChangePasswordModalProps {
   user: User | null;
   token?: string;
   initialCurrentPassword?: string;
-  onSuccess: (newToken?: string) => void;
+  onSuccess: (newToken?: string, newRefreshToken?: string) => void;
   onCancel: () => void;
 }
 
@@ -67,7 +67,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
     try {
       const res = await authApi.changeInitialPassword(cleanCurrent, cleanNew, activeToken);
-      onSuccess(res.accessToken);
+      onSuccess(res.accessToken, res.refreshToken);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al actualizar contraseña');
     } finally {
