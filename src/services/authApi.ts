@@ -53,8 +53,21 @@ function rolesToPermissions(roles: string[]): string[] {
     switch (role) {
       case 'HOST':
         perms.add('sala:tables:view');
-        perms.add('sala:tables:assign_diner');
+        perms.add('sala:tables:occupy');
+        perms.add('sala:tables:update_status');
         perms.add('sala:tables:assign_waiter');
+        perms.add('sala:assignments:view');
+        perms.add('sala:table_unions:view');
+        perms.add('sala:table_unions:create');
+        perms.add('sala:table_unions:release');
+        perms.add('sala:reservations:view');
+        perms.add('sala:reservations:create');
+        perms.add('sala:reservations:update');
+        perms.add('sala:reservations:cancel');
+        perms.add('sala:reservations:mark_no_show');
+        perms.add('sala:waitlist_entries:view');
+        perms.add('sala:waitlist_entries:create');
+        perms.add('sala:waitlist_entries:update_status');
         break;
       case 'ALMACENISTA':
         perms.add('inventory:items:read');
@@ -68,15 +81,25 @@ function rolesToPermissions(roles: string[]): string[] {
         perms.add('inventory:movements:read');
         break;
       case 'MESERO':
-        perms.add('orders:view');
-        perms.add('orders:create');
-        perms.add('orders:cancel');
+        perms.add('orders:orders:view');
+        perms.add('orders:orders:create');
+        perms.add('orders:orders:update');
+        perms.add('orders:orders:confirm');
+        perms.add('orders:orders:cancel');
+        perms.add('orders:orders:transfer');
+        perms.add('orders:items:redo');
+        perms.add('orders:orders:request_bill');
         break;
       case 'CHEF_MASTER':
       case 'CHEF':
-        perms.add('kitchen:kds:view');
-        perms.add('kitchen:order:start_preparation');
-        perms.add('kitchen:order:mark_ready');
+        perms.add('kitchen:queues:view');
+        perms.add('kitchen:orders:start_preparation');
+        perms.add('kitchen:items:ready');
+        perms.add('kitchen:orders:ready');
+        perms.add('kitchen:items:reject');
+        perms.add('kitchen:items:cancel');
+        perms.add('kitchen:orders:void_error');
+        perms.add('orders:orders:view');
         break;
       case 'GESTOR_MENU':
         perms.add('menu:entries:view');
