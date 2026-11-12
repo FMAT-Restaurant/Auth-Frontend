@@ -233,6 +233,7 @@ export const App: React.FC = () => {
       case 'sala':
       case 'menu':
       case 'ordenes':
+      case 'cocina':
       case 'caja':
       default:
         return (

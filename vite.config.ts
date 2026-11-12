@@ -7,6 +7,7 @@ const MODULE_CONFIGS = [
   { id: 'menu', name: 'menuApp', defaultPort: 5173 },
   { id: 'inventario', name: 'inventarioApp', defaultPort: 5176 },
   { id: 'ordenes', name: 'ordenesApp', defaultPort: 5177 },
+  { id: 'cocina', name: 'cocinaApp', defaultPort: 5179 },
   { id: 'caja', name: 'cajaApp', defaultPort: 5178 },
 ];
 

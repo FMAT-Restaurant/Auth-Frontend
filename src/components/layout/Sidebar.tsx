@@ -3,6 +3,7 @@ import {
   PackageIcon,
   MenuBookIcon,
   UtensilsIcon,
+  ReceiptIcon,
   ArmchairIcon,
   CreditCardIcon,
   SettingsIcon,
@@ -10,7 +11,7 @@ import {
 } from '../ui/Icons';
 import type { User } from '../../types/auth';
 
-export type NavModuleId = 'inicio' | 'sala' | 'menu' | 'inventario' | 'ordenes' | 'caja' | 'personal' | 'perfil';
+export type NavModuleId = 'inicio' | 'sala' | 'menu' | 'inventario' | 'ordenes' | 'cocina' | 'caja' | 'personal' | 'perfil';
 
 interface NavItem {
   id: NavModuleId;
@@ -41,7 +42,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'sala', label: 'Sala', icon: <ArmchairIcon size={18} />, requiredModule: 'sala' },
     { id: 'menu', label: 'Menú', icon: <MenuBookIcon size={18} />, requiredModule: 'menu' },
     { id: 'inventario', label: 'Inventario', icon: <PackageIcon size={18} />, requiredModule: 'inventory' },
-    { id: 'ordenes', label: 'Órdenes y Cocina', icon: <UtensilsIcon size={18} />, requiredModule: 'orders' },
+    { id: 'ordenes', label: 'Órdenes (POS)', icon: <ReceiptIcon size={18} />, requiredModule: 'orders' },
+    { id: 'cocina', label: 'Cocina (KDS)', icon: <UtensilsIcon size={18} />, requiredModule: 'kitchen' },
     { id: 'caja', label: 'Caja', icon: <CreditCardIcon size={18} />, requiredModule: 'billing' },
   ];
 
@@ -53,12 +55,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (currentUser.userType === 'ADMIN') return true;
     if (item.adminOnly) return false;
     if (!item.requiredModule) return true;
-    const prefixes =
-      item.requiredModule === 'orders'
-        ? ['orders:', 'kitchen:']
-        : [`${item.requiredModule}:`];
+    const prefix = `${item.requiredModule}:`;
     return currentUser.permissions.some(
-      (p) => prefixes.some((prefix) => p.startsWith(prefix)) || p === '*'
+      (p) => p.startsWith(prefix) || p === '*'
     );
   };
 

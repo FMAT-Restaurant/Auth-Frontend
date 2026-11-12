@@ -133,6 +133,15 @@ export const UtensilsIcon: React.FC<IconProps> = ({ size = 20, className = '', .
   </svg>
 );
 
+export const ReceiptIcon: React.FC<IconProps> = ({ size = 20, className = '', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+    <path d="M16 8h-8"/>
+    <path d="M16 12h-8"/>
+    <path d="M10 16h-2"/>
+  </svg>
+);
+
 export const ArmchairIcon: React.FC<IconProps> = ({ size = 20, className = '', ...props }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
     <path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/>
