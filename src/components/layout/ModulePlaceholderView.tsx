@@ -31,7 +31,7 @@ const MODULE_REGISTRY: Record<string, MicrofrontendInfo> = {
     title: 'Módulo de Menú y Catálogo',
     team: 'Equipo Menú',
     remoteName: 'menuApp/App',
-    defaultPort: 5175,
+    defaultPort: 5173,
     loadComponent: () => import('menuApp/App'),
   },
   inventario: {
@@ -150,7 +150,17 @@ export const ModulePlaceholderView: React.FC<ModulePlaceholderViewProps> = ({
     React.ComponentType<FederatedModuleProps>
   > | null>(null);
 
-  const remoteEntryUrl = `http://localhost:${info.defaultPort}/assets/remoteEntry.js`;
+  const remoteUrlEnvMap: Record<string, string | undefined> = {
+    sala: import.meta.env.VITE_REMOTE_SALA_URL,
+    menu: import.meta.env.VITE_REMOTE_MENU_URL,
+    inventario: import.meta.env.VITE_REMOTE_INVENTARIO_URL,
+    ordenes: import.meta.env.VITE_REMOTE_ORDENES_URL,
+    caja: import.meta.env.VITE_REMOTE_CAJA_URL,
+  };
+
+  const remoteEntryUrl =
+    remoteUrlEnvMap[moduleId] ||
+    `/remote/${moduleId}/assets/remoteEntry.js`;
 
   const loadModule = useCallback(async () => {
     setStatus('loading');

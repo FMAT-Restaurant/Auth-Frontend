@@ -171,4 +171,56 @@ describe('StaffDetailDrawer', () => {
       expect(onClose).toHaveBeenCalled();
     });
   });
+
+  it('resets isDeleting state so a second collaborator can be deleted consecutively', async () => {
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    const onClose = vi.fn();
+
+    const { rerender } = render(
+      <StaffDetailDrawer
+        isOpen={true}
+        collaborator={mockCollaborator}
+        availableRoles={mockRoles}
+        onClose={onClose}
+        onSave={vi.fn()}
+        onResetPassword={vi.fn()}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Dar de baja'));
+    fireEvent.click(screen.getByText('Sí, eliminar definitivamente'));
+    await waitFor(() => {
+      expect(onDelete).toHaveBeenCalledWith('c1');
+    });
+
+    const secondCollaborator: User = {
+      ...mockCollaborator,
+      id: 'c2',
+      staffId: 'J000005',
+      displayName: 'Pedro Ruiz',
+      firstName: 'Pedro',
+      lastName: 'Ruiz',
+    };
+
+    rerender(
+      <StaffDetailDrawer
+        isOpen={true}
+        collaborator={secondCollaborator}
+        availableRoles={mockRoles}
+        onClose={onClose}
+        onSave={vi.fn()}
+        onResetPassword={vi.fn()}
+        onDelete={onDelete}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Dar de baja'));
+    const confirmBtn = screen.getByRole('button', { name: 'Sí, eliminar definitivamente' });
+    expect(confirmBtn).not.toBeDisabled();
+    fireEvent.click(confirmBtn);
+    await waitFor(() => {
+      expect(onDelete).toHaveBeenCalledWith('c2');
+    });
+  });
 });

@@ -53,8 +53,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (currentUser.userType === 'ADMIN') return true;
     if (item.adminOnly) return false;
     if (!item.requiredModule) return true;
+    const prefixes =
+      item.requiredModule === 'orders'
+        ? ['orders:', 'kitchen:']
+        : [`${item.requiredModule}:`];
     return currentUser.permissions.some(
-      (p) => p.startsWith(`${item.requiredModule}:`) || p === '*'
+      (p) => prefixes.some((prefix) => p.startsWith(prefix)) || p === '*'
     );
   };
 

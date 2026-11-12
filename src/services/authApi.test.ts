@@ -63,7 +63,7 @@ describe('authApi', () => {
           user: {
             id: '2',
             staffId: 'M001',
-            roles: ['HOST', 'ALMACENISTA', 'MESERO', 'CHEF_MASTER'],
+            roles: ['HOST', 'ALMACENISTA', 'GESTOR_MENU', 'MESERO', 'CHEF_MASTER', 'CAJERO'],
           },
         }),
         { status: 200 },
@@ -74,9 +74,11 @@ describe('authApi', () => {
     expect(staffSession.user.userType).toBe('STAFF');
     expect(staffSession.user.mustChangePassword).toBe(true);
     expect(staffSession.user.permissions).toContain('orders:view');
-    expect(staffSession.user.permissions).toContain('inventory:view');
+    expect(staffSession.user.permissions).toContain('inventory:items:read');
+    expect(staffSession.user.permissions).toContain('menu:entries:view');
     expect(staffSession.user.permissions).toContain('sala:tables:view');
     expect(staffSession.user.permissions).toContain('kitchen:kds:view');
+    expect(staffSession.user.permissions).toContain('billing:invoices:create');
 
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(JSON.stringify({ message: 'Credenciales inválidas' }), { status: 401 }),
