@@ -16,27 +16,31 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUse
   const hasMenu = currentUser.permissions.some((p) => p.startsWith('menu:') || p === '*');
   const hasSala = currentUser.permissions.some((p) => p.startsWith('sala:') || p === '*');
   const hasBilling = currentUser.permissions.some((p) => p.startsWith('billing:') || p === '*');
+  const availableModules = [hasInventory, hasOrders, hasMenu, hasSala, hasBilling].filter(Boolean).length;
+  const today = new Date().toLocaleDateString('es-MX', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      {/* Header sin insignias técnicas */}
+      {/* Encabezado: la identidad (Staff ID y puesto) ya está fija en el Sidebar,
+          así que aquí solo va un resumen de la jornada (UI-LAYOUT-006). */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '26px', color: 'var(--color-ink)', fontWeight: 700, margin: 0 }}>
           Bienvenido, {currentUser.displayName}
         </h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '14px', color: 'var(--color-muted)' }}>
-            Identificador: <strong>{currentUser.staffId || 'ADMINISTRADOR'}</strong>
-          </span>
-          {currentUser.roleLabel && (
-            <>
-              <span style={{ color: 'var(--color-border)' }}>•</span>
-              <span style={{ fontSize: '14px', color: 'var(--color-text)' }}>
-                Puesto: <strong style={{ color: 'var(--color-primary)' }}>{currentUser.roleLabel}</strong>
-              </span>
-            </>
-          )}
-        </div>
+        <p
+          data-testid="dashboard-summary"
+          style={{ fontSize: '14px', color: 'var(--color-muted)', margin: '8px 0 0' }}
+        >
+          <span style={{ textTransform: 'capitalize' }}>{today}</span>
+          {' · '}
+          {availableModules === 0
+            ? 'Aún no tienes módulos asignados. Pide acceso al Administrador.'
+            : `Tienes ${availableModules} ${availableModules === 1 ? 'módulo disponible' : 'módulos disponibles'}.`}
+        </p>
       </div>
 
       {/* Módulos disponibles para el usuario */}
