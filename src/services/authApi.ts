@@ -53,26 +53,67 @@ function rolesToPermissions(roles: string[]): string[] {
     switch (role) {
       case 'HOST':
         perms.add('sala:tables:view');
-        perms.add('sala:tables:assign_diner');
+        perms.add('sala:tables:occupy');
+        perms.add('sala:tables:update_status');
         perms.add('sala:tables:assign_waiter');
+        perms.add('sala:assignments:view');
+        perms.add('sala:table_unions:view');
+        perms.add('sala:table_unions:create');
+        perms.add('sala:table_unions:release');
+        perms.add('sala:reservations:view');
+        perms.add('sala:reservations:create');
+        perms.add('sala:reservations:update');
+        perms.add('sala:reservations:cancel');
+        perms.add('sala:reservations:mark_no_show');
+        perms.add('sala:waitlist_entries:view');
+        perms.add('sala:waitlist_entries:create');
+        perms.add('sala:waitlist_entries:update_status');
         break;
       case 'ALMACENISTA':
-        perms.add('inventory:view');
-        perms.add('inventory:ingredients:create');
-        perms.add('inventory:ingredients:delete');
-        perms.add('inventory:stock:update_status');
+        perms.add('inventory:items:read');
+        perms.add('inventory:items:write');
+        perms.add('inventory:batches:read');
+        perms.add('inventory:batches:write');
+        perms.add('inventory:suppliers:read');
+        perms.add('inventory:suppliers:write');
+        perms.add('inventory:recipes:read');
+        perms.add('inventory:reservations:read');
+        perms.add('inventory:movements:read');
         break;
       case 'MESERO':
-        perms.add('orders:view');
-        perms.add('orders:create');
-        perms.add('menu:view');
-        perms.add('sala:tables:view');
+        perms.add('orders:orders:view');
+        perms.add('orders:orders:create');
+        perms.add('orders:orders:update');
+        perms.add('orders:orders:confirm');
+        perms.add('orders:orders:cancel');
+        perms.add('orders:orders:transfer');
+        perms.add('orders:items:redo');
+        perms.add('orders:orders:request_bill');
         break;
       case 'CHEF_MASTER':
-        perms.add('kitchen:kds:view');
-        perms.add('kitchen:order:start_preparation');
-        perms.add('kitchen:order:mark_ready');
-        perms.add('orders:view');
+      case 'CHEF':
+        perms.add('kitchen:queues:view');
+        perms.add('kitchen:orders:start_preparation');
+        perms.add('kitchen:items:ready');
+        perms.add('kitchen:orders:ready');
+        perms.add('kitchen:items:reject');
+        perms.add('kitchen:items:cancel');
+        perms.add('kitchen:orders:void_error');
+        perms.add('orders:orders:view');
+        break;
+      case 'GESTOR_MENU':
+        perms.add('menu:entries:view');
+        perms.add('menu:entries:manage');
+        perms.add('menu:categories:view');
+        perms.add('menu:categories:manage');
+        perms.add('menu:recipes:view');
+        perms.add('menu:recipes:manage');
+        perms.add('menu:offers:view');
+        perms.add('menu:offers:manage');
+        break;
+      case 'CAJERO':
+        perms.add('billing:invoices:create');
+        perms.add('billing:reports:view');
         break;
     }
   }
@@ -88,7 +129,7 @@ async function authenticatedFetch(
   fallbackToken?: string,
 ): Promise<Response> {
   const session = authStorage.getSession();
-  const token = fallbackToken || session?.accessToken;
+  const token = session?.accessToken || fallbackToken;
 
   const buildRequest = (t?: string) => {
     const headers = new Headers(options.headers || {});
@@ -415,13 +456,14 @@ export const authApi = {
 
   async logout(token?: string): Promise<void> {
     try {
-      await authenticatedFetch(
-        '/auth/logout',
-        {
-          method: 'POST',
-        },
-        token,
-      );
+      const headers = new Headers();
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers,
+      });
     } catch {
       // Ignorar errores de red en logout
     }
