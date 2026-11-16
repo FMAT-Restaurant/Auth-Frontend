@@ -88,7 +88,7 @@ async function authenticatedFetch(
   fallbackToken?: string,
 ): Promise<Response> {
   const session = authStorage.getSession();
-  const token = fallbackToken || session?.accessToken;
+  const token = session?.accessToken || fallbackToken;
 
   const buildRequest = (t?: string) => {
     const headers = new Headers(options.headers || {});
@@ -415,13 +415,14 @@ export const authApi = {
 
   async logout(token?: string): Promise<void> {
     try {
-      await authenticatedFetch(
-        '/auth/logout',
-        {
-          method: 'POST',
-        },
-        token,
-      );
+      const headers = new Headers();
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers,
+      });
     } catch {
       // Ignorar errores de red en logout
     }

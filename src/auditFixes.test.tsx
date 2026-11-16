@@ -84,6 +84,84 @@ describe('Correcciones de la auditoría QA', () => {
       const res = await authApi.changeInitialPassword('Temporal123', 'NuevaClave123', 'token');
       expect(res).toEqual({ accessToken: 'nuevo-access', refreshToken: 'nuevo-refresh' });
     });
+
+    it('cerrar sesión con token expirado no dispara refresh ni marca sesión expirada', async () => {
+      authStorage.saveSession(session);
+      const onExpired = vi.fn();
+      const unsubscribe = authStorage.onSessionExpired(onExpired);
+
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response('', { status: 401 }));
+
+      await authApi.logout('expired-token');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(onExpired).not.toHaveBeenCalled();
+      unsubscribe();
+    });
+
+    it('después de cerrar sesión e iniciar sesión de nuevo no aparece el modal de sesión expirada', async () => {
+      authStorage.saveSession(session);
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        const url = typeof input === 'string' ? input : input.toString();
+        if (url.endsWith('/auth/logout')) {
+          return Promise.resolve(new Response('', { status: 401 }));
+        }
+        if (url.endsWith('/auth/setup-status')) {
+          return Promise.resolve(new Response(JSON.stringify({ configured: true }), { status: 200 }));
+        }
+        if (url.endsWith('/auth/login')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                accessToken: 'fresh-access',
+                refreshToken: 'fresh-refresh',
+                mustChangePassword: false,
+                user: {
+                  id: 'a1',
+                  staffId: 'ADM000001',
+                  email: 'admin@fmat.com',
+                  roles: ['ADMINISTRADOR'],
+                },
+              }),
+              { status: 200 },
+            ),
+          );
+        }
+        return Promise.resolve(new Response('', { status: 404 }));
+      });
+
+      render(<App />);
+      expect(screen.getByText('Bienvenido, Héctor Pizza', { exact: false })).toBeInTheDocument();
+
+      // Simular cierre de sesión manual cuando el token ya expiró
+      await act(async () => {
+        fireEvent.click(screen.getByText('Cerrar sesión'));
+      });
+
+      // Incluso si un evento tardío intenta expirar la sesión ya cerrada, no debe afectar al próximo login
+      act(() => {
+        authStorage.expireSession();
+      });
+
+      fireEvent.click(screen.getByText('Gerente / Admin'));
+      fireEvent.change(screen.getByLabelText(/Correo Electrónico/i), {
+        target: { value: 'admin@fmat.com' },
+      });
+      fireEvent.change(screen.getByLabelText(/Contraseña/i), {
+        target: { value: 'Secret123!' },
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Acceder al Panel Administrativo/i }));
+      });
+
+      expect(screen.getByText('Bienvenido, Gerente General', { exact: false })).toBeInTheDocument();
+      expect(screen.queryByText('Tu sesión ha expirado')).not.toBeInTheDocument();
+      expect(authStorage.getSession()?.accessToken).toBe('fresh-access');
+      expect(fetchSpy).toHaveBeenCalled();
+    });
   });
 
   describe('BUG-AUTH-002: recuperación de contraseña del administrador', () => {
