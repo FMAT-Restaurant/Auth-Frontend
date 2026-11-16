@@ -3,6 +3,7 @@ import { Card, Button, Input, Modal, AlertCircleIcon, CheckIcon, TrashIcon, Shie
 import { authApi } from '../../services/authApi';
 import type { RoleDefinition, ServicePermissionGroup } from '../../types/auth';
 import { PermissionsCatalogPicker } from './PermissionsCatalogPicker';
+import { ServiceFilterButton } from './ServiceFilterButton';
 import { buildPermissionLookup } from './permissionsCatalogUtils';
 import { RoleDetailDrawer } from './RoleDetailDrawer';
 
@@ -343,53 +344,13 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
               const isActive = selectedServiceFilter === group.serviceKey;
 
               return (
-                <button
+                <ServiceFilterButton
                   key={group.serviceKey}
-                  type="button"
+                  label={group.serviceName}
+                  count={count}
+                  isActive={isActive}
                   onClick={() => setSelectedServiceFilter(group.serviceKey)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '8px',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '9px 10px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: isActive ? 700 : 500,
-                    backgroundColor: isActive ? 'rgba(234, 88, 12, 0.12)' : 'transparent',
-                    color: isActive ? 'var(--color-primary)' : 'var(--color-ink)',
-                  }}
-                >
-                  <span
-                    style={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                    title={group.serviceName}
-                  >
-                    {group.serviceName}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      flexShrink: 0,
-                      padding: '2px 7px',
-                      borderRadius: '999px',
-                      backgroundColor: isActive
-                        ? 'rgba(234, 88, 12, 0.18)'
-                        : 'var(--color-surface-elevated)',
-                      color: isActive ? 'var(--color-primary)' : 'var(--color-muted)',
-                    }}
-                  >
-                    {count}
-                  </span>
-                </button>
+                />
               );
             })}
           </aside>

@@ -44,77 +44,78 @@ export interface BackendStaffItem {
 }
 
 // Mapea los roles del backend a permisos PBAC estándar del sistema
+const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
+  HOST: [
+    'sala:tables:view',
+    'sala:tables:occupy',
+    'sala:tables:update_status',
+    'sala:tables:assign_waiter',
+    'sala:assignments:view',
+    'sala:table_unions:view',
+    'sala:table_unions:create',
+    'sala:table_unions:release',
+    'sala:reservations:view',
+    'sala:reservations:create',
+    'sala:reservations:update',
+    'sala:reservations:cancel',
+    'sala:reservations:mark_no_show',
+    'sala:waitlist_entries:view',
+    'sala:waitlist_entries:create',
+    'sala:waitlist_entries:update_status',
+  ],
+  ALMACENISTA: [
+    'inventory:items:read',
+    'inventory:items:write',
+    'inventory:batches:read',
+    'inventory:batches:write',
+    'inventory:suppliers:read',
+    'inventory:suppliers:write',
+    'inventory:recipes:read',
+    'inventory:reservations:read',
+    'inventory:movements:read',
+  ],
+  MESERO: [
+    'orders:orders:view',
+    'orders:orders:create',
+    'orders:orders:update',
+    'orders:orders:confirm',
+    'orders:orders:cancel',
+    'orders:orders:transfer',
+    'orders:items:redo',
+    'orders:orders:request_bill',
+  ],
+  CHEF_MASTER: [
+    'kitchen:queues:view',
+    'kitchen:orders:start_preparation',
+    'kitchen:items:ready',
+    'kitchen:orders:ready',
+    'kitchen:items:reject',
+    'kitchen:items:cancel',
+    'kitchen:orders:void_error',
+    'orders:orders:view',
+  ],
+  GESTOR_MENU: [
+    'menu:entries:view',
+    'menu:entries:manage',
+    'menu:categories:view',
+    'menu:categories:manage',
+    'menu:recipes:view',
+    'menu:recipes:manage',
+    'menu:offers:view',
+    'menu:offers:manage',
+  ],
+  CAJERO: ['billing:invoices:create', 'billing:reports:view'],
+};
+ROLE_DEFAULT_PERMISSIONS.CHEF = ROLE_DEFAULT_PERMISSIONS.CHEF_MASTER;
+
 function rolesToPermissions(roles: string[]): string[] {
   if (roles.includes('ADMINISTRADOR')) {
     return ['*'];
   }
   const perms = new Set<string>();
   for (const role of roles) {
-    switch (role) {
-      case 'HOST':
-        perms.add('sala:tables:view');
-        perms.add('sala:tables:occupy');
-        perms.add('sala:tables:update_status');
-        perms.add('sala:tables:assign_waiter');
-        perms.add('sala:assignments:view');
-        perms.add('sala:table_unions:view');
-        perms.add('sala:table_unions:create');
-        perms.add('sala:table_unions:release');
-        perms.add('sala:reservations:view');
-        perms.add('sala:reservations:create');
-        perms.add('sala:reservations:update');
-        perms.add('sala:reservations:cancel');
-        perms.add('sala:reservations:mark_no_show');
-        perms.add('sala:waitlist_entries:view');
-        perms.add('sala:waitlist_entries:create');
-        perms.add('sala:waitlist_entries:update_status');
-        break;
-      case 'ALMACENISTA':
-        perms.add('inventory:items:read');
-        perms.add('inventory:items:write');
-        perms.add('inventory:batches:read');
-        perms.add('inventory:batches:write');
-        perms.add('inventory:suppliers:read');
-        perms.add('inventory:suppliers:write');
-        perms.add('inventory:recipes:read');
-        perms.add('inventory:reservations:read');
-        perms.add('inventory:movements:read');
-        break;
-      case 'MESERO':
-        perms.add('orders:orders:view');
-        perms.add('orders:orders:create');
-        perms.add('orders:orders:update');
-        perms.add('orders:orders:confirm');
-        perms.add('orders:orders:cancel');
-        perms.add('orders:orders:transfer');
-        perms.add('orders:items:redo');
-        perms.add('orders:orders:request_bill');
-        break;
-      case 'CHEF_MASTER':
-      case 'CHEF':
-        perms.add('kitchen:queues:view');
-        perms.add('kitchen:orders:start_preparation');
-        perms.add('kitchen:items:ready');
-        perms.add('kitchen:orders:ready');
-        perms.add('kitchen:items:reject');
-        perms.add('kitchen:items:cancel');
-        perms.add('kitchen:orders:void_error');
-        perms.add('orders:orders:view');
-        break;
-      case 'GESTOR_MENU':
-        perms.add('menu:entries:view');
-        perms.add('menu:entries:manage');
-        perms.add('menu:categories:view');
-        perms.add('menu:categories:manage');
-        perms.add('menu:recipes:view');
-        perms.add('menu:recipes:manage');
-        perms.add('menu:offers:view');
-        perms.add('menu:offers:manage');
-        break;
-      case 'CAJERO':
-        perms.add('billing:invoices:create');
-        perms.add('billing:reports:view');
-        break;
+    for (const perm of ROLE_DEFAULT_PERMISSIONS[role] ?? []) {
+      perms.add(perm);
     }
   }
   return Array.from(perms);

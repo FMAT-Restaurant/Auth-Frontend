@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { ServicePermissionGroup } from '../../types/auth';
+import { ServiceFilterButton } from './ServiceFilterButton';
 
 interface PermissionsCatalogPickerProps {
   catalog: ServicePermissionGroup[];
@@ -119,55 +120,15 @@ export const PermissionsCatalogPicker: React.FC<PermissionsCatalogPickerProps> =
           const isActive = activeService === group.serviceKey;
 
           return (
-            <button
+            <ServiceFilterButton
               key={group.serviceKey}
-              type="button"
+              label={group.serviceName}
+              count={`${selectedInGroup}/${group.permissions.length}`}
+              isActive={isActive}
+              badgeActive={selectedInGroup > 0}
+              compact
               onClick={() => setActiveService(group.serviceKey)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '6px',
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 10px',
-                borderRadius: 'var(--radius-sm)',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: isActive ? 700 : 500,
-                backgroundColor: isActive ? 'rgba(234, 88, 12, 0.12)' : 'transparent',
-                color: isActive ? 'var(--color-primary)' : 'var(--color-ink)',
-              }}
-            >
-              <span
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-                title={group.serviceName}
-              >
-                {group.serviceName}
-              </span>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  flexShrink: 0,
-                  padding: '1px 6px',
-                  borderRadius: '999px',
-                  backgroundColor:
-                    selectedInGroup > 0
-                      ? 'rgba(234, 88, 12, 0.15)'
-                      : 'rgba(107, 114, 128, 0.12)',
-                  color:
-                    selectedInGroup > 0 ? 'var(--color-primary)' : 'var(--color-muted)',
-                }}
-              >
-                {selectedInGroup}/{group.permissions.length}
-              </span>
-            </button>
+            />
           );
         })}
       </aside>
