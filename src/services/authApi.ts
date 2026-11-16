@@ -701,6 +701,31 @@ export const authApi = {
     return data;
   },
 
+  async updateRole(
+    code: string,
+    payload: { name?: string; description?: string; permissions?: string[] },
+    token?: string,
+  ): Promise<RoleDefinition> {
+    const res = await authenticatedFetch(
+      `/roles/${encodeURIComponent(code)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(formatErrorMessage(data, 'Error al actualizar rol'));
+    }
+
+    return data;
+  },
+
   async deleteRole(code: string, token?: string): Promise<{ message: string; code: string }> {
     const res = await authenticatedFetch(
       `/roles/${encodeURIComponent(code)}`,
