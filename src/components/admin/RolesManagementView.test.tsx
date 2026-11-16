@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RolesManagementView } from './RolesManagementView';
 import { authApi } from '../../services/authApi';
@@ -8,6 +8,7 @@ vi.mock('../../services/authApi', () => ({
     getRoles: vi.fn(),
     getPermissionsCatalog: vi.fn(),
     createRole: vi.fn(),
+    updateRole: vi.fn(),
     deleteRole: vi.fn(),
   },
 }));
@@ -27,6 +28,13 @@ const mockRoles = [
     permissions: ['orders:view'],
     isSystemRole: false,
   },
+  {
+    code: 'GESTOR_MENU',
+    name: 'Gestor de Menú',
+    description: 'Administra platillos y carta',
+    permissions: ['menu:dishes:manage'],
+    isSystemRole: true,
+  },
 ];
 
 const mockCatalog = [
@@ -38,6 +46,13 @@ const mockCatalog = [
       { code: 'orders:create', label: 'Crear órdenes', description: 'Permite crear comandas' },
     ],
   },
+  {
+    serviceKey: 'menu',
+    serviceName: 'Menú y Carta',
+    permissions: [
+      { code: 'menu:dishes:manage', label: 'Modificar platillos', description: 'Crear y editar platillos' },
+    ],
+  },
 ];
 
 describe('RolesManagementView', () => {
@@ -47,7 +62,7 @@ describe('RolesManagementView', () => {
     vi.mocked(authApi.getPermissionsCatalog).mockResolvedValue(mockCatalog);
   });
 
-  it('loads and displays system and custom roles', async () => {
+  it('loads and displays uniform role cards without inline permission chips', async () => {
     render(<RolesManagementView token="test-token" />);
 
     expect(screen.getByText(/Cargando catálogo de roles/i)).toBeInTheDocument();
@@ -55,18 +70,94 @@ describe('RolesManagementView', () => {
     await waitFor(() => {
       expect(screen.getByText('Administrador')).toBeInTheDocument();
       expect(screen.getByText('Barista')).toBeInTheDocument();
+      expect(screen.getByText('Gestor de Menú')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Control Total del Sistema (*)')).toBeInTheDocument();
-    expect(screen.getByText('orders:view')).toBeInTheDocument();
+    expect(screen.getByText('Acceso Total (*)')).toBeInTheDocument();
+    expect(screen.getAllByText('1 permiso')).toHaveLength(2);
+    expect(screen.queryByText('orders:view')).not.toBeInTheDocument();
+    expect(screen.queryByText('menu:dishes:manage')).not.toBeInTheDocument();
   });
 
-  it('handles role creation validation, permission toggles, and submission', async () => {
+  it('filters roles by microservice sidebar and search query (name or permission parts)', async () => {
+    render(<RolesManagementView token="test-token" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Barista')).toBeInTheDocument();
+    });
+
+    const sidebar = screen.getByLabelText('Filtrar roles por microservicio');
+    expect(within(sidebar).getByText('Todos')).toBeInTheDocument();
+
+    // Filtrar por Menú y Carta
+    fireEvent.click(within(sidebar).getByText('Menú y Carta'));
+    expect(screen.getByText('Gestor de Menú')).toBeInTheDocument();
+    expect(screen.getByText('Administrador')).toBeInTheDocument();
+    expect(screen.queryByText('Barista')).not.toBeInTheDocument();
+
+    // Volver a Todos y buscar por parte del permiso ("dishes")
+    fireEvent.click(within(sidebar).getByText('Todos'));
+    const searchInput = screen.getByLabelText('Buscar roles o permisos');
+    fireEvent.change(searchInput, { target: { value: 'dishes' } });
+
+    expect(screen.getByText('Gestor de Menú')).toBeInTheDocument();
+    expect(screen.queryByText('Barista')).not.toBeInTheDocument();
+
+    // Buscar por descripción del permiso ("comandas")
+    fireEvent.change(searchInput, { target: { value: 'comandas' } });
+    expect(screen.getByText('Barista')).toBeInTheDocument();
+    expect(screen.queryByText('Gestor de Menú')).not.toBeInTheDocument();
+  });
+
+  it('opens RoleDetailDrawer on card click, shows human-readable permissions with code on hover, and saves updates', async () => {
+    const onRolesChanged = vi.fn();
+    vi.mocked(authApi.updateRole).mockResolvedValueOnce({
+      code: 'BARISTA',
+      name: 'Barista',
+      description: 'Preparación de bebidas',
+      permissions: ['orders:view', 'orders:create'],
+      isSystemRole: false,
+    });
+
+    render(<RolesManagementView token="test-token" onRolesChanged={onRolesChanged} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Barista')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Barista'));
+
+    const drawer = screen.getByRole('dialog');
+    // Se muestra la descripción legible ("Ver órdenes") y el código en el atributo title (hover)
+    const permBadges = within(drawer).getAllByTitle('orders:view');
+    expect(permBadges[0]).toHaveTextContent('Ver órdenes');
+
+    // Agregar permiso "Crear órdenes" desde el catálogo del drawer
+    const createOrdersCheckbox = within(drawer).getByLabelText(/Crear órdenes/i);
+    fireEvent.click(createOrdersCheckbox);
+
+    fireEvent.click(within(drawer).getByText('Guardar cambios'));
+
+    await waitFor(() => {
+      expect(authApi.updateRole).toHaveBeenCalledWith(
+        'BARISTA',
+        {
+          name: 'Barista',
+          description: 'Preparación de bebidas',
+          permissions: ['orders:view', 'orders:create'],
+        },
+        'test-token',
+      );
+      expect(onRolesChanged).toHaveBeenCalled();
+    });
+  });
+
+  it('handles role creation with microservice sidebar filter in modal', async () => {
     const onRolesChanged = vi.fn();
     vi.mocked(authApi.createRole).mockResolvedValueOnce({
       code: 'CAJERO',
       name: 'Cajero',
-      permissions: ['orders:view', 'orders:create'],
+      permissions: ['orders:view'],
     });
 
     render(<RolesManagementView token="test-token" onRolesChanged={onRolesChanged} />);
@@ -88,6 +179,10 @@ describe('RolesManagementView', () => {
     fireEvent.change(screen.getByPlaceholderText(/Encargado de preparación/i), {
       target: { value: 'Cobro de cuentas' },
     });
+
+    // Filtrar en la sidebar del modal por "Órdenes y Cocina"
+    const modalSidebar = screen.getByLabelText('Filtrar permisos por microservicio');
+    fireEvent.click(within(modalSidebar).getByText('Órdenes y Cocina'));
 
     const selectAllBtn = screen.getByText('Seleccionar todos');
     fireEvent.click(selectAllBtn);

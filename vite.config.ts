@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
       `http://localhost:${m.defaultPort}`;
     const customUrl = env[`VITE_REMOTE_${m.id.toUpperCase()}_URL`];
 
-    remotes[m.name] = customUrl || `http://localhost:3000/remote/${m.id}/assets/remoteEntry.js`;
+    remotes[m.name] = customUrl || `/remote/${m.id}/assets/remoteEntry.js`;
     proxy[`/remote/${m.id}`] = {
       target,
       changeOrigin: true,
@@ -66,10 +66,12 @@ export default defineConfig(({ mode }) => {
               if (restPath.endsWith('.js') || contentType.includes('javascript')) {
                 res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
                 const code = await upstream.text();
-                const patched = code.replace(
-                  /http:\/\/localhost:808[0-5]/g,
-                  gatewayUrl,
-                );
+                const patched = code
+                  .replace(
+                    /((?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*["']http:\/\/localhost:808[0-5]["'];\s*(?:let|var)\s+[a-zA-Z_$][\w$]*\s*=\s*)21\b/g,
+                    '$1$2.length',
+                  )
+                  .replace(/http:\/\/localhost:808[0-5]/g, gatewayUrl);
                 res.end(patched);
               } else {
                 if (contentType) res.setHeader('Content-Type', contentType);
@@ -93,6 +95,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: true,
+      cors: true,
       proxy,
     },
     optimizeDeps: {
