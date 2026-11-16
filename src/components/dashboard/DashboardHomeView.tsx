@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Button } from '../ui';
-import { PackageIcon, UtensilsIcon, MenuBookIcon, ArmchairIcon, CreditCardIcon } from '../ui/Icons';
+import { PackageIcon, UtensilsIcon, ReceiptIcon, MenuBookIcon, ArmchairIcon, CreditCardIcon } from '../ui/Icons';
 import type { User } from '../../types/auth';
 import type { NavModuleId } from '../layout/Sidebar';
 
@@ -12,7 +12,8 @@ interface DashboardHomeViewProps {
 export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUser, onNavigate }) => {
   // Accesos rápidos derivados naturalmente de los módulos que tiene asignados
   const hasInventory = currentUser.permissions.some((p) => p.startsWith('inventory:') || p === '*');
-  const hasOrders = currentUser.permissions.some((p) => p.startsWith('orders:') || p.startsWith('kitchen:') || p === '*');
+  const hasOrders = currentUser.permissions.some((p) => p.startsWith('orders:') || p === '*');
+  const hasKitchen = currentUser.permissions.some((p) => p.startsWith('kitchen:') || p === '*');
   const hasMenu = currentUser.permissions.some((p) => p.startsWith('menu:') || p === '*');
   const hasSala = currentUser.permissions.some((p) => p.startsWith('sala:') || p === '*');
   const hasBilling = currentUser.permissions.some((p) => p.startsWith('billing:') || p === '*');
@@ -96,17 +97,50 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUse
                       flexShrink: 0,
                     }}
                   >
-                    <UtensilsIcon size={20} />
+                    <ReceiptIcon size={20} />
                   </div>
                   <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-ink)', margin: 0 }}>
-                    Órdenes y Cocina
+                    Órdenes y Pedidos (POS)
                   </h3>
                 </div>
                 <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0 }}>
-                  Apertura y seguimiento de comandas, visualización de pedidos en KDS y despacho culinario.
+                  Apertura y captura de comandas, gestión de pedidos por mesa o para llevar y solicitud de cuenta.
                 </p>
               </div>
               <Button variant="secondary" size="sm" onClick={() => onNavigate('ordenes')}>
+                Abrir módulo →
+              </Button>
+            </Card>
+          )}
+
+          {hasKitchen && (
+            <Card padding="md" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: 'var(--radius-control)',
+                      backgroundColor: 'var(--color-primary-soft)',
+                      color: 'var(--color-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <UtensilsIcon size={20} />
+                  </div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-ink)', margin: 0 }}>
+                    Cocina y Pantalla KDS
+                  </h3>
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0 }}>
+                  Cola de preparación en tiempo real, inicio de cocción de platillos y despacho de comandas.
+                </p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => onNavigate('cocina')}>
                 Abrir módulo →
               </Button>
             </Card>

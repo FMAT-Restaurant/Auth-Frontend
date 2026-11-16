@@ -51,6 +51,11 @@ export const StaffDetailDrawer: React.FC<StaffDetailDrawerProps> = ({
       setErrorMsg(null);
       setIsCopied(false);
       setIsStaffIdCopied(false);
+      setIsSaving(false);
+      setIsResetting(false);
+      setIsDeleting(false);
+      setShowResetModal(false);
+      setShowDeleteModal(false);
     }
   }, [collaborator]);
 
@@ -128,12 +133,14 @@ export const StaffDetailDrawer: React.FC<StaffDetailDrawerProps> = ({
 
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
+    setErrorMsg(null);
     try {
       await onDelete(collaborator.id);
       setShowDeleteModal(false);
       onClose();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Error al eliminar colaborador');
+    } finally {
       setIsDeleting(false);
     }
   };

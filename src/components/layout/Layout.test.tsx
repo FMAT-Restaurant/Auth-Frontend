@@ -80,7 +80,7 @@ describe('Layout, DashboardHomeView, and ChangePasswordModal', () => {
     );
 
     expect(screen.queryByText('Personal y Roles')).not.toBeInTheDocument();
-    expect(screen.getByText('Órdenes y Cocina')).toBeInTheDocument();
+    expect(screen.getByText('Órdenes (POS)')).toBeInTheDocument();
     expect(screen.queryByText('Inventario')).not.toBeInTheDocument();
   });
 
@@ -90,7 +90,8 @@ describe('Layout, DashboardHomeView, and ChangePasswordModal', () => {
 
     expect(screen.getByText('Bienvenido, Roberto Admin')).toBeInTheDocument();
     expect(screen.getByText('Inventario y Almacén')).toBeInTheDocument();
-    expect(screen.getByText('Órdenes y Cocina')).toBeInTheDocument();
+    expect(screen.getByText('Órdenes y Pedidos (POS)')).toBeInTheDocument();
+    expect(screen.getByText('Cocina y Pantalla KDS')).toBeInTheDocument();
     expect(screen.getByText('Menú y Catálogo')).toBeInTheDocument();
     expect(screen.getByText('Sala y Mesas')).toBeInTheDocument();
     expect(screen.getByText('Caja y Cuentas')).toBeInTheDocument();
@@ -99,6 +100,7 @@ describe('Layout, DashboardHomeView, and ChangePasswordModal', () => {
     buttons.forEach((btn) => fireEvent.click(btn));
     expect(onNavigate).toHaveBeenCalledWith('inventario');
     expect(onNavigate).toHaveBeenCalledWith('ordenes');
+    expect(onNavigate).toHaveBeenCalledWith('cocina');
     expect(onNavigate).toHaveBeenCalledWith('menu');
     expect(onNavigate).toHaveBeenCalledWith('sala');
     expect(onNavigate).toHaveBeenCalledWith('caja');

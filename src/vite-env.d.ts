@@ -20,6 +20,11 @@ declare module 'ordenesApp/App' {
   export default App;
 }
 
+declare module 'cocinaApp/App' {
+  const App: import('react').ComponentType<import('./types/auth').FederatedModuleProps>;
+  export default App;
+}
+
 declare module 'cajaApp/App' {
   const App: import('react').ComponentType<import('./types/auth').FederatedModuleProps>;
   export default App;
