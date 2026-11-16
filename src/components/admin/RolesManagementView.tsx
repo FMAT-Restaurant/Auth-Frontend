@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, Button, Input, Modal, AlertCircleIcon, CheckIcon, TrashIcon, ShieldIcon } from '../ui';
 import { authApi } from '../../services/authApi';
 import type { RoleDefinition, ServicePermissionGroup } from '../../types/auth';
-import { PermissionsCatalogPicker, buildPermissionLookup } from './PermissionsCatalogPicker';
+import { PermissionsCatalogPicker } from './PermissionsCatalogPicker';
+import { buildPermissionLookup } from './permissionsCatalogUtils';
 import { RoleDetailDrawer } from './RoleDetailDrawer';
 
 interface RolesManagementViewProps {

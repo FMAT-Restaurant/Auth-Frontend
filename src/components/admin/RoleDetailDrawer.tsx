@@ -10,10 +10,8 @@ import {
   XIcon,
 } from '../ui';
 import type { RoleDefinition, ServicePermissionGroup } from '../../types/auth';
-import {
-  PermissionsCatalogPicker,
-  buildPermissionLookup,
-} from './PermissionsCatalogPicker';
+import { PermissionsCatalogPicker } from './PermissionsCatalogPicker';
+import { buildPermissionLookup } from './permissionsCatalogUtils';
 
 export interface RoleDetailDrawerProps {
   isOpen: boolean;
