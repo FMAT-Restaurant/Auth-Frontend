@@ -29,7 +29,7 @@ Aplicación web (SPA) desarrollada para la gestión de acceso, control de identi
 
 * **Framework:** React 18 con TypeScript y Vite
 * **Estilos:** Variables CSS nativas con soporte completo para Tema Claro / Oscuro
-* **Pruebas:** Vitest y React Testing Library (13 pruebas de componentes e integración)
+* **Pruebas:** Vitest y React Testing Library (58 pruebas unitarias y de integración) + Playwright (E2E)
 * **Despliegue:** Nginx Alpine (Multi-stage build) con reverse-proxy interno hacia la API REST
 
 ---
@@ -44,7 +44,7 @@ En la raíz del proyecto (`FmatRestaurant`), ejecuta:
 docker compose up --build
 ```
 
-La aplicación web estará disponible en [http://localhost:5173](http://localhost:5173).
+La aplicación web estará disponible en [http://localhost:3000](http://localhost:3000).
 
 ---
 
