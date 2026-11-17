@@ -31,7 +31,7 @@ const MODULE_REGISTRY: Record<string, MicrofrontendInfo> = {
     title: 'Módulo de Menú y Catálogo',
     team: 'Equipo Menú',
     remoteName: 'menuApp/App',
-    defaultPort: 5175,
+    defaultPort: 5173,
     loadComponent: () => import('menuApp/App'),
   },
   inventario: {
@@ -42,11 +42,18 @@ const MODULE_REGISTRY: Record<string, MicrofrontendInfo> = {
     loadComponent: () => import('inventarioApp/App'),
   },
   ordenes: {
-    title: 'Módulo de Órdenes y Cocina (KDS)',
-    team: 'Equipo Orders + Kitchen',
+    title: 'Módulo de Órdenes y Pedidos (POS)',
+    team: 'Equipo Órdenes (POS)',
     remoteName: 'ordenesApp/App',
     defaultPort: 5177,
     loadComponent: () => import('ordenesApp/App'),
+  },
+  cocina: {
+    title: 'Módulo de Cocina y Pantalla KDS',
+    team: 'Equipo Cocina (KDS)',
+    remoteName: 'cocinaApp/App',
+    defaultPort: 5179,
+    loadComponent: () => import('cocinaApp/App'),
   },
   caja: {
     title: 'Módulo de Caja y Facturación',
@@ -150,7 +157,18 @@ export const ModulePlaceholderView: React.FC<ModulePlaceholderViewProps> = ({
     React.ComponentType<FederatedModuleProps>
   > | null>(null);
 
-  const remoteEntryUrl = `http://localhost:${info.defaultPort}/assets/remoteEntry.js`;
+  const remoteUrlEnvMap: Record<string, string | undefined> = {
+    sala: import.meta.env.VITE_REMOTE_SALA_URL,
+    menu: import.meta.env.VITE_REMOTE_MENU_URL,
+    inventario: import.meta.env.VITE_REMOTE_INVENTARIO_URL,
+    ordenes: import.meta.env.VITE_REMOTE_ORDENES_URL,
+    cocina: import.meta.env.VITE_REMOTE_COCINA_URL,
+    caja: import.meta.env.VITE_REMOTE_CAJA_URL,
+  };
+
+  const remoteEntryUrl =
+    remoteUrlEnvMap[moduleId] ||
+    `/remote/${moduleId}/assets/remoteEntry.js`;
 
   const loadModule = useCallback(async () => {
     setStatus('loading');

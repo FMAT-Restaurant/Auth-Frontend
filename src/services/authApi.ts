@@ -44,36 +44,78 @@ export interface BackendStaffItem {
 }
 
 // Mapea los roles del backend a permisos PBAC estándar del sistema
+const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
+  HOST: [
+    'sala:tables:view',
+    'sala:tables:occupy',
+    'sala:tables:update_status',
+    'sala:tables:assign_waiter',
+    'sala:assignments:view',
+    'sala:table_unions:view',
+    'sala:table_unions:create',
+    'sala:table_unions:release',
+    'sala:reservations:view',
+    'sala:reservations:create',
+    'sala:reservations:update',
+    'sala:reservations:cancel',
+    'sala:reservations:mark_no_show',
+    'sala:waitlist_entries:view',
+    'sala:waitlist_entries:create',
+    'sala:waitlist_entries:update_status',
+  ],
+  ALMACENISTA: [
+    'inventory:items:read',
+    'inventory:items:write',
+    'inventory:batches:read',
+    'inventory:batches:write',
+    'inventory:suppliers:read',
+    'inventory:suppliers:write',
+    'inventory:recipes:read',
+    'inventory:reservations:read',
+    'inventory:movements:read',
+  ],
+  MESERO: [
+    'orders:orders:view',
+    'orders:orders:create',
+    'orders:orders:update',
+    'orders:orders:confirm',
+    'orders:orders:cancel',
+    'orders:orders:transfer',
+    'orders:items:redo',
+    'orders:orders:request_bill',
+  ],
+  CHEF_MASTER: [
+    'kitchen:queues:view',
+    'kitchen:orders:start_preparation',
+    'kitchen:items:ready',
+    'kitchen:orders:ready',
+    'kitchen:items:reject',
+    'kitchen:items:cancel',
+    'kitchen:orders:void_error',
+    'orders:orders:view',
+  ],
+  GESTOR_MENU: [
+    'menu:entries:view',
+    'menu:entries:manage',
+    'menu:categories:view',
+    'menu:categories:manage',
+    'menu:recipes:view',
+    'menu:recipes:manage',
+    'menu:offers:view',
+    'menu:offers:manage',
+  ],
+  CAJERO: ['billing:invoices:create', 'billing:reports:view'],
+};
+ROLE_DEFAULT_PERMISSIONS.CHEF = ROLE_DEFAULT_PERMISSIONS.CHEF_MASTER;
+
 function rolesToPermissions(roles: string[]): string[] {
   if (roles.includes('ADMINISTRADOR')) {
     return ['*'];
   }
   const perms = new Set<string>();
   for (const role of roles) {
-    switch (role) {
-      case 'HOST':
-        perms.add('sala:tables:view');
-        perms.add('sala:tables:assign_diner');
-        perms.add('sala:tables:assign_waiter');
-        break;
-      case 'ALMACENISTA':
-        perms.add('inventory:view');
-        perms.add('inventory:ingredients:create');
-        perms.add('inventory:ingredients:delete');
-        perms.add('inventory:stock:update_status');
-        break;
-      case 'MESERO':
-        perms.add('orders:view');
-        perms.add('orders:create');
-        perms.add('menu:view');
-        perms.add('sala:tables:view');
-        break;
-      case 'CHEF_MASTER':
-        perms.add('kitchen:kds:view');
-        perms.add('kitchen:order:start_preparation');
-        perms.add('kitchen:order:mark_ready');
-        perms.add('orders:view');
-        break;
+    for (const perm of ROLE_DEFAULT_PERMISSIONS[role] ?? []) {
+      perms.add(perm);
     }
   }
   return Array.from(perms);
@@ -88,7 +130,7 @@ async function authenticatedFetch(
   fallbackToken?: string,
 ): Promise<Response> {
   const session = authStorage.getSession();
-  const token = fallbackToken || session?.accessToken;
+  const token = session?.accessToken || fallbackToken;
 
   const buildRequest = (t?: string) => {
     const headers = new Headers(options.headers || {});
@@ -415,13 +457,14 @@ export const authApi = {
 
   async logout(token?: string): Promise<void> {
     try {
-      await authenticatedFetch(
-        '/auth/logout',
-        {
-          method: 'POST',
-        },
-        token,
-      );
+      const headers = new Headers();
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers,
+      });
     } catch {
       // Ignorar errores de red en logout
     }
@@ -654,6 +697,31 @@ export const authApi = {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(formatErrorMessage(data, 'Error al crear rol'));
+    }
+
+    return data;
+  },
+
+  async updateRole(
+    code: string,
+    payload: { name?: string; description?: string; permissions?: string[] },
+    token?: string,
+  ): Promise<RoleDefinition> {
+    const res = await authenticatedFetch(
+      `/roles/${encodeURIComponent(code)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      },
+      token,
+    );
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(formatErrorMessage(data, 'Error al actualizar rol'));
     }
 
     return data;

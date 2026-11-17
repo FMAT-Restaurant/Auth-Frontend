@@ -1,11 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, Button, Input, Modal, AlertCircleIcon, CheckIcon, TrashIcon, ShieldIcon } from '../ui';
 import { authApi } from '../../services/authApi';
 import type { RoleDefinition, ServicePermissionGroup } from '../../types/auth';
+import { PermissionsCatalogPicker } from './PermissionsCatalogPicker';
+import { ServiceFilterButton } from './ServiceFilterButton';
+import { buildPermissionLookup } from './permissionsCatalogUtils';
+import { RoleDetailDrawer } from './RoleDetailDrawer';
 
 interface RolesManagementViewProps {
   token?: string;
   onRolesChanged?: () => void;
+}
+
+function roleMatchesService(role: RoleDefinition, serviceKey: string): boolean {
+  if (serviceKey === 'all') return true;
+  const perms = role.permissions || [];
+  return perms.includes('*') || perms.some((p) => p.startsWith(`${serviceKey}:`));
 }
 
 export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
@@ -18,6 +28,13 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
+  // Filtros de la lista de roles
+  const [selectedServiceFilter, setSelectedServiceFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Drawer de detalle / edición de rol
+  const [selectedRole, setSelectedRole] = useState<RoleDefinition | null>(null);
+
   // Modal para crear rol
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [roleName, setRoleName] = useState('');
@@ -28,6 +45,8 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
   // Modal para eliminar rol
   const [roleToDelete, setRoleToDelete] = useState<RoleDefinition | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const permissionLookup = useMemo(() => buildPermissionLookup(catalog), [catalog]);
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -50,6 +69,37 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  const filteredRoles = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return roles.filter((role) => {
+      if (!roleMatchesService(role, selectedServiceFilter)) {
+        return false;
+      }
+
+      if (!query) return true;
+
+      if (
+        role.name.toLowerCase().includes(query) ||
+        role.code.toLowerCase().includes(query) ||
+        (role.description && role.description.toLowerCase().includes(query))
+      ) {
+        return true;
+      }
+
+      return (role.permissions || []).some((permCode) => {
+        if (permCode.toLowerCase().includes(query)) return true;
+        const meta = permissionLookup.get(permCode);
+        if (!meta) return false;
+        return (
+          meta.label.toLowerCase().includes(query) ||
+          meta.description.toLowerCase().includes(query) ||
+          meta.serviceName.toLowerCase().includes(query)
+        );
+      });
+    });
+  }, [roles, selectedServiceFilter, searchQuery, permissionLookup]);
 
   const handleTogglePermission = (code: string) => {
     setSelectedPermissions((prev) =>
@@ -108,6 +158,18 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
     }
   };
 
+  const handleUpdateRole = async (
+    code: string,
+    payload: { name?: string; description?: string; permissions?: string[] },
+  ) => {
+    const updated = await authApi.updateRole(code, payload, token);
+    setRoles((prev) => prev.map((r) => (r.code === code ? updated : r)));
+    setSelectedRole(updated);
+    setSuccessBanner(`Rol '${updated.name}' actualizado exitosamente`);
+    setTimeout(() => setSuccessBanner(null), 3500);
+    if (onRolesChanged) onRolesChanged();
+  };
+
   const handleDeleteRole = async () => {
     if (!roleToDelete) return;
     setIsDeleting(true);
@@ -115,6 +177,9 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
       await authApi.deleteRole(roleToDelete.code, token);
       setSuccessBanner(`Rol '${roleToDelete.name}' eliminado exitosamente`);
       setTimeout(() => setSuccessBanner(null), 3500);
+      if (selectedRole?.code === roleToDelete.code) {
+        setSelectedRole(null);
+      }
       setRoleToDelete(null);
       await loadData();
       if (onRolesChanged) onRolesChanged();
@@ -190,7 +255,7 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
         </div>
       )}
 
-      {/* Grid de Roles */}
+      {/* Contenido principal: Sidebar de filtro + Grid de Roles */}
       {isLoading ? (
         <div style={{ padding: '36px 0', textAlign: 'center', color: 'var(--color-muted)' }}>
           Cargando catálogo de roles...
@@ -198,116 +263,297 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
       ) : (
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-            gap: '16px',
+            display: 'flex',
+            gap: '20px',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
           }}
         >
-          {roles.map((role) => (
-            <Card key={role.code} padding="md" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
-                      {role.name}
-                    </h3>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        padding: '2px 8px',
-                        borderRadius: '999px',
-                        fontWeight: 600,
-                        backgroundColor: role.isSystemRole ? 'rgba(107, 114, 128, 0.15)' : 'rgba(234, 88, 12, 0.15)',
-                        color: role.isSystemRole ? 'var(--color-muted)' : 'var(--color-primary)',
+          {/* Sidebar izquierda de filtro por microservicio */}
+          <aside
+            aria-label="Filtrar roles por microservicio"
+            style={{
+              width: '240px',
+              flexShrink: 0,
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-card)',
+              padding: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                color: 'var(--color-muted)',
+                padding: '4px 8px 8px',
+              }}
+            >
+              Microservicios
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSelectedServiceFilter('all')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                textAlign: 'left',
+                padding: '9px 10px',
+                borderRadius: 'var(--radius-sm)',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: selectedServiceFilter === 'all' ? 700 : 500,
+                backgroundColor:
+                  selectedServiceFilter === 'all' ? 'rgba(234, 88, 12, 0.12)' : 'transparent',
+                color:
+                  selectedServiceFilter === 'all' ? 'var(--color-primary)' : 'var(--color-ink)',
+              }}
+            >
+              <span>Todos</span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  padding: '2px 7px',
+                  borderRadius: '999px',
+                  backgroundColor:
+                    selectedServiceFilter === 'all'
+                      ? 'rgba(234, 88, 12, 0.18)'
+                      : 'var(--color-surface-elevated)',
+                  color:
+                    selectedServiceFilter === 'all'
+                      ? 'var(--color-primary)'
+                      : 'var(--color-muted)',
+                }}
+              >
+                {roles.length}
+              </span>
+            </button>
+
+            {catalog.map((group) => {
+              const count = roles.filter((r) => roleMatchesService(r, group.serviceKey)).length;
+              const isActive = selectedServiceFilter === group.serviceKey;
+
+              return (
+                <ServiceFilterButton
+                  key={group.serviceKey}
+                  label={group.serviceName}
+                  count={count}
+                  isActive={isActive}
+                  onClick={() => setSelectedServiceFilter(group.serviceKey)}
+                />
+              );
+            })}
+          </aside>
+
+          {/* Columna derecha: Barra de búsqueda + Grid uniforme de Roles */}
+          <div style={{ flex: 1, minWidth: '280px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar por nombre de rol o permiso (ej. menu, dishes, manage, platillos)..."
+                aria-label="Buscar roles o permisos"
+                style={{
+                  flex: 1,
+                  minWidth: '240px',
+                  padding: '10px 14px',
+                  fontSize: '13px',
+                  borderRadius: 'var(--radius-control)',
+                  border: '1px solid var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-ink)',
+                  outline: 'none',
+                }}
+              />
+              <span style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
+                {filteredRoles.length} {filteredRoles.length === 1 ? 'rol' : 'roles'}
+              </span>
+            </div>
+
+            {filteredRoles.length === 0 ? (
+              <Card padding="lg" style={{ textAlign: 'center', color: 'var(--color-muted)', fontSize: '13px' }}>
+                No se encontraron roles que coincidan con los filtros seleccionados.
+              </Card>
+            ) : (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gridAutoRows: '1fr',
+                  gap: '16px',
+                }}
+              >
+                {filteredRoles.map((role) => {
+                  const isWildcard = role.permissions?.includes('*');
+                  const permCount = role.permissions?.length || 0;
+
+                  return (
+                    <Card
+                      key={role.code}
+                      padding="md"
+                      onClick={() => setSelectedRole(role)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setSelectedRole(role);
+                        }
                       }}
-                    >
-                      {role.isSystemRole ? 'Sistema' : 'Personalizado'}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--color-muted)', fontFamily: 'monospace', marginTop: '2px' }}>
-                    {role.code}
-                  </div>
-                </div>
-
-                {!role.isSystemRole && (
-                  <button
-                    type="button"
-                    onClick={() => setRoleToDelete(role)}
-                    title="Eliminar rol personalizado"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: 'var(--color-muted)',
-                      padding: '4px',
-                      borderRadius: 'var(--radius-sm)',
-                    }}
-                  >
-                    <TrashIcon size={16} />
-                  </button>
-                )}
-              </div>
-
-              {role.description && (
-                <p style={{ fontSize: '13px', color: 'var(--color-muted)', margin: 0, lineHeight: 1.4 }}>
-                  {role.description}
-                </p>
-              )}
-
-              {/* Lista de permisos asignados */}
-              <div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)', marginBottom: '8px' }}>
-                  Permisos incluidos ({role.permissions?.includes('*') ? 'Acceso Total (*)' : role.permissions?.length || 0}):
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {role.permissions?.includes('*') ? (
-                    <span
                       style={{
-                        padding: '3px 8px',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        backgroundColor: 'rgba(234, 88, 12, 0.15)',
-                        color: 'var(--color-primary)',
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        height: '100%',
+                        cursor: 'pointer',
+                        transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
                       }}
                     >
-                      <ShieldIcon size={12} />
-                      Control Total del Sistema (*)
-                    </span>
-                  ) : (
-                    (role.permissions || []).map((perm) => (
-                      <span
-                        key={perm}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
+                                {role.name}
+                              </h3>
+                              <span
+                                style={{
+                                  fontSize: '11px',
+                                  padding: '2px 8px',
+                                  borderRadius: '999px',
+                                  fontWeight: 600,
+                                  backgroundColor: role.isSystemRole
+                                    ? 'rgba(107, 114, 128, 0.15)'
+                                    : 'rgba(234, 88, 12, 0.15)',
+                                  color: role.isSystemRole ? 'var(--color-muted)' : 'var(--color-primary)',
+                                }}
+                              >
+                                {role.isSystemRole ? 'Sistema' : 'Personalizado'}
+                              </span>
+                            </div>
+                            <div
+                              style={{
+                                fontSize: '11px',
+                                color: 'var(--color-muted)',
+                                fontFamily: 'monospace',
+                                marginTop: '2px',
+                              }}
+                            >
+                              {role.code}
+                            </div>
+                          </div>
+
+                          {!role.isSystemRole && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRoleToDelete(role);
+                              }}
+                              title="Eliminar rol personalizado"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: 'var(--color-muted)',
+                                padding: '4px',
+                                borderRadius: 'var(--radius-sm)',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <TrashIcon size={16} />
+                            </button>
+                          )}
+                        </div>
+
+                        <p
+                          style={{
+                            fontSize: '13px',
+                            color: 'var(--color-muted)',
+                            margin: 0,
+                            lineHeight: 1.4,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            minHeight: '36px',
+                          }}
+                        >
+                          {role.description || 'Sin descripción operativa.'}
+                        </p>
+                      </div>
+
+                      {/* Pie de card compacto para mantener tamaño uniforme */}
+                      <div
                         style={{
-                          padding: '3px 8px',
-                          borderRadius: 'var(--radius-sm)',
-                          fontSize: '11px',
-                          backgroundColor: 'var(--color-surface-elevated)',
-                          border: '1px solid var(--color-border)',
-                          color: 'var(--color-ink)',
-                          fontFamily: 'monospace',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          paddingTop: '10px',
+                          borderTop: '1px solid var(--color-border)',
+                          fontSize: '12px',
                         }}
                       >
-                        {perm}
-                      </span>
-                    ))
-                  )}
-                </div>
+                        {isWildcard ? (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontWeight: 600,
+                              color: 'var(--color-primary)',
+                            }}
+                          >
+                            <ShieldIcon size={13} />
+                            Acceso Total (*)
+                          </span>
+                        ) : (
+                          <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>
+                            {permCount} {permCount === 1 ? 'permiso' : 'permisos'}
+                          </span>
+                        )}
+
+                        <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                          Ver / editar →
+                        </span>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
-            </Card>
-          ))}
+            )}
+          </div>
         </div>
       )}
+
+      {/* Drawer lateral: Ver y editar permisos del rol */}
+      <RoleDetailDrawer
+        isOpen={Boolean(selectedRole)}
+        role={selectedRole}
+        catalog={catalog}
+        onClose={() => setSelectedRole(null)}
+        onSave={handleUpdateRole}
+        onRequestDelete={(role) => setRoleToDelete(role)}
+      />
 
       {/* Modal: Crear Nuevo Rol */}
       <Modal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         title="Crear Nuevo Rol Operativo"
-        maxWidth="640px"
+        maxWidth="860px"
         footer={
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', width: '100%' }}>
             <Button
@@ -330,115 +576,37 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
           </div>
         }
       >
-        <form onSubmit={handleCreateRole} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <Input
-            label="Nombre del Rol"
-            placeholder="Ej. Barista de Turno"
-            value={roleName}
-            onChange={(e) => setRoleName(e.target.value)}
-            required
-          />
+        <form onSubmit={handleCreateRole} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+            <Input
+              label="Nombre del Rol"
+              placeholder="Ej. Barista de Turno"
+              value={roleName}
+              onChange={(e) => setRoleName(e.target.value)}
+              required
+            />
 
-          <Input
-            label="Descripción del Rol (opcional)"
-            placeholder="Ej. Encargado de preparación de café y bebidas especiales"
-            value={roleDescription}
-            onChange={(e) => setRoleDescription(e.target.value)}
-          />
+            <Input
+              label="Descripción del Rol (opcional)"
+              placeholder="Ej. Encargado de preparación de café y bebidas especiales"
+              value={roleDescription}
+              onChange={(e) => setRoleDescription(e.target.value)}
+            />
+          </div>
 
-          {/* Catálogo de permisos por microservicio */}
+          {/* Catálogo de permisos por microservicio con sidebar */}
           <div>
             <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)', display: 'block', marginBottom: '8px' }}>
               Permisos por Microservicio (selecciona los accesos autorizados) *
             </label>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '360px', overflowY: 'auto', paddingRight: '4px' }}>
-              {catalog.map((group) => {
-                const groupCodes = group.permissions.map((p) => p.code);
-                const allSelected = groupCodes.every((c) => selectedPermissions.includes(c));
-
-                return (
-                  <div
-                    key={group.serviceKey}
-                    style={{
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-control)',
-                      padding: '12px 14px',
-                      backgroundColor: 'var(--color-surface)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginBottom: '10px',
-                        borderBottom: '1px solid var(--color-border)',
-                        paddingBottom: '8px',
-                      }}
-                    >
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ink)' }}>
-                        {group.serviceName}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleAllServicePermissions(group.serviceKey)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--color-primary)',
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                          fontWeight: 500,
-                        }}
-                      >
-                        {allSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}
-                      </button>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '8px' }}>
-                      {group.permissions.map((perm) => {
-                        const isChecked = selectedPermissions.includes(perm.code);
-                        return (
-                          <label
-                            key={perm.code}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                              gap: '8px',
-                              padding: '6px 8px',
-                              borderRadius: 'var(--radius-sm)',
-                              backgroundColor: isChecked ? 'rgba(234, 88, 12, 0.05)' : 'transparent',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => handleTogglePermission(perm.code)}
-                              style={{
-                                accentColor: 'var(--color-primary)',
-                                width: '15px',
-                                height: '15px',
-                                marginTop: '2px',
-                              }}
-                            />
-                            <div>
-                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>
-                                {perm.label}
-                              </div>
-                              <div style={{ fontSize: '11px', color: 'var(--color-muted)', lineHeight: 1.3 }}>
-                                {perm.description}
-                              </div>
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <PermissionsCatalogPicker
+              catalog={catalog}
+              selectedPermissions={selectedPermissions}
+              onTogglePermission={handleTogglePermission}
+              onToggleAllService={handleToggleAllServicePermissions}
+              height="360px"
+            />
           </div>
         </form>
       </Modal>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AuthCard } from './components/auth/AuthCard';
 import { ChangePasswordModal } from './components/auth/ChangePasswordModal';
 import { AppLayout } from './components/layout/AppLayout';
@@ -24,6 +24,10 @@ export const App: React.FC = () => {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [activeModule, setActiveModule] = useState<NavModuleId>('inicio');
   const [isSessionExpired, setIsSessionExpired] = useState(false);
+  const hasActiveSessionRef = useRef(Boolean(currentSession));
+  const isLoggingOutRef = useRef(false);
+
+  hasActiveSessionRef.current = Boolean(currentSession);
 
   useEffect(() => {
     const savedTheme = (localStorage.getItem('fmat_theme') as 'light' | 'dark') || 'light';
@@ -31,11 +35,13 @@ export const App: React.FC = () => {
     document.documentElement.setAttribute('data-theme', savedTheme);
 
     const unsubscribe = authStorage.subscribe((newSession) => {
+      hasActiveSessionRef.current = Boolean(newSession);
       setCurrentSession(newSession);
     });
 
     // BUG-SEC-001: en lugar de expulsar al usuario de golpe, primero se le avisa
     const unsubscribeExpired = authStorage.onSessionExpired(() => {
+      if (!hasActiveSessionRef.current || isLoggingOutRef.current) return;
       setIsSessionExpired(true);
     });
 
@@ -56,6 +62,9 @@ export const App: React.FC = () => {
   }, [currentSession, isSessionExpired]);
 
   const handleLoginSuccess = (session: AuthSession) => {
+    isLoggingOutRef.current = false;
+    hasActiveSessionRef.current = true;
+    setIsSessionExpired(false);
     setCurrentSession(session);
     setActiveModule('inicio');
   };
@@ -68,6 +77,8 @@ export const App: React.FC = () => {
   };
 
   const handlePasswordChangeSuccess = (newToken?: string, newRefreshToken?: string) => {
+    isLoggingOutRef.current = false;
+    setIsSessionExpired(false);
     if (tempUser) {
       const activeUser: User = {
         ...tempUser,
@@ -81,6 +92,7 @@ export const App: React.FC = () => {
         refreshToken: newRefreshToken || currentSession?.refreshToken,
         user: activeUser,
       };
+      hasActiveSessionRef.current = true;
       authStorage.saveSession(newSession);
       setCurrentSession(newSession);
     }
@@ -92,18 +104,27 @@ export const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    if (currentSession?.accessToken) {
-      await authApi.logout(currentSession.accessToken);
-    }
+    isLoggingOutRef.current = true;
+    hasActiveSessionRef.current = false;
+    setIsSessionExpired(false);
+    const tokenToRevoke = currentSession?.accessToken;
     setCurrentSession(null);
     setTempUser(null);
     setTempToken(undefined);
     setIsChangePasswordOpen(false);
     setActiveModule('inicio');
     authStorage.clearSession();
+    try {
+      if (tokenToRevoke) {
+        await authApi.logout(tokenToRevoke);
+      }
+    } finally {
+      isLoggingOutRef.current = false;
+    }
   };
 
   const handleSessionExpiredConfirm = () => {
+    hasActiveSessionRef.current = false;
     setIsSessionExpired(false);
     setCurrentSession(null);
     setActiveModule('inicio');
@@ -212,6 +233,7 @@ export const App: React.FC = () => {
       case 'sala':
       case 'menu':
       case 'ordenes':
+      case 'cocina':
       case 'caja':
       default:
         return (
