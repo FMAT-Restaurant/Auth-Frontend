@@ -35,3 +35,6 @@ coverage
 coverage-v8
 junit.xml
 lcov.info
+test-results/
+playwright-report/
+e2e-results.json
