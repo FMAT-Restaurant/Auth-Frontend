@@ -14,7 +14,7 @@ const MODULE_CONFIGS = [
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
 
-  const gatewayUrl = env.VITE_GATEWAY_URL || 'http://localhost:8000';
+  const configuredGatewayUrl = env.VITE_GATEWAY_URL?.trim();
   const remotes: Record<string, string> = {};
   const proxy: Record<string, { target: string; changeOrigin: boolean; rewrite: (p: string) => string }> = {};
 
@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => {
         name: 'fmat-remote-gateway-rewrite',
         configureServer(server) {
           server.middlewares.use(async (rawReq, rawRes, next) => {
-            const req = rawReq as { url?: string };
+            const req = rawReq as { url?: string; headers?: { host?: string } };
             const res = rawRes as {
               statusCode: number;
               setHeader: (name: string, value: string) => void;
@@ -52,6 +52,12 @@ export default defineConfig(({ mode }) => {
             const mod = MODULE_CONFIGS.find((m) => m.id === moduleId);
             if (!mod) return next();
             const liveEnv = loadEnv(mode, '.', '');
+            const liveGateway = liveEnv.VITE_GATEWAY_URL?.trim() || configuredGatewayUrl;
+            const reqHostname = (req.headers?.host || 'localhost').split(':')[0] || 'localhost';
+            const effectiveGatewayUrl =
+              liveGateway && liveGateway.toLowerCase() !== 'auto'
+                ? liveGateway
+                : `http://${reqHostname}:8000`;
             const target =
               liveEnv[`VITE_REMOTE_${mod.id.toUpperCase()}_TARGET`] ||
               `http://localhost:${mod.defaultPort}`;
@@ -71,7 +77,7 @@ export default defineConfig(({ mode }) => {
                     /((?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*["']http:\/\/localhost:808[0-5]["'];\s*(?:let|var)\s+[a-zA-Z_$][\w$]*\s*=\s*)21\b/g,
                     '$1$2.length',
                   )
-                  .replace(/http:\/\/localhost:808[0-5]/g, gatewayUrl);
+                  .replace(/http:\/\/localhost:808[0-5]/g, effectiveGatewayUrl);
                 res.end(patched);
               } else {
                 if (contentType) res.setHeader('Content-Type', contentType);
