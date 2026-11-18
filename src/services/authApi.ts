@@ -1,7 +1,19 @@
 import type { User, AuthSession, RoleDefinition, ServicePermissionGroup } from '../types/auth';
 import { authStorage } from './authStorage';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:4000/api/v1';
+function resolveApiBase(): string {
+  const configured = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
+  if (configured && configured.toLowerCase() !== 'auto') {
+    return configured;
+  }
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+    return `${protocol}//${window.location.hostname}:4000/api/v1`;
+  }
+  return 'http://localhost:4000/api/v1';
+}
+
+const API_BASE = resolveApiBase();
 
 export interface LoginResponse {
   message: string;
@@ -91,6 +103,7 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     'sala:table_unions:view',
     'sala:table_unions:create',
     'sala:table_unions:release',
+    'menu:entries:view',
   ],
   CHEF_MASTER: [
     'kitchen:queues:view',
