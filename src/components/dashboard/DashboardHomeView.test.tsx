@@ -34,4 +34,17 @@ describe('DashboardHomeView (UI-LAYOUT-006)', () => {
       'Aún no tienes módulos asignados',
     );
   });
+
+  // AUTH-F05 (#16): la cocina también es un módulo y debe contarse.
+  it('cuenta el módulo de cocina en los módulos disponibles', () => {
+    render(
+      <DashboardHomeView
+        currentUser={{ ...baseUser, permissions: ['kitchen:queues:view'] }}
+        onNavigate={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('dashboard-summary')).toHaveTextContent(
+      'Tienes 1 módulo disponible.',
+    );
+  });
 });
