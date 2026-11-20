@@ -57,14 +57,27 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const cleanIdentifier = isStaff ? identifier.trim().toUpperCase() : identifier.trim();
+
+    if (isStaff && cleanIdentifier.includes('@')) {
+      setError(
+        'El acceso de Personal requiere tu Staff ID. Cambia a la pestaña "Gerente / Admin" para ingresar con correo electrónico.',
+      );
+      return;
+    }
+
+    if (!isStaff && !cleanIdentifier.includes('@')) {
+      setError('El acceso de Gerente / Admin requiere un correo electrónico válido.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const cleanIdentifier = isStaff ? identifier.trim().toUpperCase() : identifier.trim();
-      const cleanPassword = password.trim();
-      const session = await authApi.login(cleanIdentifier, cleanPassword);
+      const session = await authApi.login(cleanIdentifier, password, isStaff ? 'STAFF' : 'ADMIN');
       if (session.user.mustChangePassword) {
-        onRequirePasswordChange(session.user, session.accessToken, cleanPassword);
+        onRequirePasswordChange(session.user, session.accessToken, password);
       } else {
         onSuccess(session);
       }

@@ -96,9 +96,19 @@ describe('StaffManagementView', () => {
     fireEvent.click(screen.getByText('+ Dar de alta empleado'));
     expect(screen.getByText('Registrar nuevo colaborador')).toBeInTheDocument();
 
+    // Ningún rol debe venir preseleccionado por defecto (tampoco MESERO)
+    expect(screen.getByLabelText(/Mesero/i)).not.toBeChecked();
+    expect(screen.getByLabelText(/Host/i)).not.toBeChecked();
+
     fireEvent.change(screen.getByPlaceholderText('Ej. Juan'), { target: { value: 'María' } });
     fireEvent.change(screen.getByPlaceholderText('Ej. Pérez'), { target: { value: 'López' } });
 
+    // Intentar crear sin rol muestra error y no llama a la API
+    fireEvent.click(screen.getByText('Crear Colaborador'));
+    expect(screen.getByText('Debes seleccionar al menos un rol operativo para el colaborador')).toBeInTheDocument();
+    expect(authApi.createStaff).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByLabelText(/Mesero/i));
     fireEvent.click(screen.getByLabelText(/Host/i));
     fireEvent.click(screen.getByText('Crear Colaborador'));
 

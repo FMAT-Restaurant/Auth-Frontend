@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Input, Button, LockIcon, ShieldIcon, AlertCircleIcon } from '../ui';
 import { authApi } from '../../services/authApi';
 import { authStorage } from '../../services/authStorage';
+import { validateStrongPassword } from '../../utils/passwordValidation';
 import type { User } from '../../types/auth';
 
 interface ChangePasswordModalProps {
@@ -37,21 +38,18 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    const cleanCurrent = currentPassword.trim();
-    const cleanNew = newPassword.trim();
-    const cleanConfirm = confirmPassword.trim();
-
-    if (cleanNew.length < 6) {
-      setError('La nueva contraseña debe tener al menos 6 caracteres');
+    const passwordError = validateStrongPassword(newPassword, [user?.staffId, user?.email]);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
-    if (cleanNew === cleanCurrent) {
+    if (newPassword === currentPassword) {
       setError('La nueva contraseña no puede ser igual a la clave temporal');
       return;
     }
 
-    if (cleanNew !== cleanConfirm) {
+    if (newPassword !== confirmPassword) {
       setError('Las nuevas contraseñas no coinciden');
       return;
     }
@@ -66,7 +64,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     setIsLoading(true);
 
     try {
-      const res = await authApi.changeInitialPassword(cleanCurrent, cleanNew, activeToken);
+      const res = await authApi.changeInitialPassword(currentPassword, newPassword, activeToken);
       onSuccess(res.accessToken, res.refreshToken);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al actualizar contraseña');
@@ -118,7 +116,10 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           type="password"
           placeholder="Ingresa la clave provista por el gerente"
           value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
+          onChange={(e) => {
+            setCurrentPassword(e.target.value);
+            if (error) setError(null);
+          }}
           required
           isPasswordToggleable
           leftIcon={<LockIcon size={18} />}
@@ -127,13 +128,16 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         <Input
           label="Nueva contraseña personal"
           type="password"
-          placeholder="Mínimo 6 caracteres"
+          placeholder="Mínimo 8 caracteres"
           value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
+          onChange={(e) => {
+            setNewPassword(e.target.value);
+            if (error) setError(null);
+          }}
           required
           isPasswordToggleable
           leftIcon={<LockIcon size={18} />}
-          helperText="Mínimo 6 caracteres"
+          helperText="Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo especial."
         />
 
         <Input

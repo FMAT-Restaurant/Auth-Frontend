@@ -31,7 +31,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(['MESERO']);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   // Modo Permisos Personalizados en Alta
   const [isCustomizingPermissions, setIsCustomizingPermissions] = useState(false);
@@ -77,11 +77,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
 
   const handleToggleRole = (code: string) => {
     setSelectedRoles((prev) =>
-      prev.includes(code)
-        ? prev.length > 1
-          ? prev.filter((r) => r !== code)
-          : prev
-        : [...prev, code],
+      prev.includes(code) ? prev.filter((r) => r !== code) : [...prev, code],
     );
   };
 
@@ -97,6 +93,11 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
 
     if (!token) {
       setError('Sesión no autenticada');
+      return;
+    }
+
+    if (!isCustomizingPermissions && selectedRoles.length === 0) {
+      setError('Debes seleccionar al menos un rol operativo para el colaborador');
       return;
     }
 
@@ -174,7 +175,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
       setShowCreateForm(false);
       setFirstName('');
       setLastName('');
-      setSelectedRoles(['MESERO']);
+      setSelectedRoles([]);
       setIsCustomizingPermissions(false);
       setCustomPermissions([]);
       setSaveRoleAsNew(false);
@@ -281,7 +282,11 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
             variant={showCreateForm ? 'secondary' : 'primary'}
             size="md"
             onClick={() => {
-              setShowCreateForm(!showCreateForm);
+              const next = !showCreateForm;
+              setShowCreateForm(next);
+              if (!next) {
+                setSelectedRoles([]);
+              }
               setError(null);
               setSuccessBanner(null);
             }}
@@ -493,7 +498,14 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
-                  <Button variant="secondary" size="md" onClick={() => setShowCreateForm(false)}>
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setSelectedRoles([]);
+                    }}
+                  >
                     Cancelar
                   </Button>
                   <Button variant="primary" size="md" type="submit" isLoading={isSubmitting}>
