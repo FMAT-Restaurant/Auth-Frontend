@@ -25,7 +25,7 @@ export interface LoginResponse {
     staffId: string;
     email?: string;
     roles: string[];
-    views?: string[];
+    allowedViews?: string[];
   };
 }
 
@@ -299,7 +299,7 @@ export const authApi = {
       displayName: isStaff ? `Colaborador ${data.user.staffId}` : 'Gerente General',
       roleLabel: roleCodes.join(', ') || (isStaff ? 'Personal' : 'Administrador'),
       roles: roleCodes,
-      views: data.user.views,
+      views: data.user.allowedViews,
       permissions,
       mustChangePassword: Boolean(data.mustChangePassword),
     };
@@ -426,7 +426,7 @@ export const authApi = {
       displayName: fullName,
       roleLabel: roleCodes.join(', ') || (isStaff ? 'Personal' : 'Administrador'),
       roles: roleCodes,
-      views: data.views,
+      views: data.allowedViews,
       permissions:
         data.permissions && data.permissions.length > 0
           ? data.permissions
