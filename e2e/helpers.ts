@@ -41,7 +41,6 @@ export async function injectAdminSession(page: Page) {
       'fmat_restaurant_auth_session',
       JSON.stringify({
         accessToken: 'mock_admin_jwt_token_for_audit',
-        refreshToken: 'mock_admin_refresh_token',
         user: {
           id: 'b29ba2fc-4ac9-4ac9-af46-986a4089dbd5',
           userType: 'ADMIN',
@@ -66,7 +65,6 @@ export async function injectStaffSession(page: Page, roles: string[] = ['MESERO'
       'fmat_restaurant_auth_session',
       JSON.stringify({
         accessToken: 'mock_staff_jwt_token_for_audit',
-        refreshToken: 'mock_staff_refresh_token',
         user: {
           id: '59aaa30e-4075-436e-9c61-b35a49fadbc3',
           userType: 'STAFF',
@@ -77,7 +75,7 @@ export async function injectStaffSession(page: Page, roles: string[] = ['MESERO'
           displayName: 'Tony Polanco',
           roleLabel: rolesParam.join(', '),
           roles: rolesParam,
-          permissions: ['orders:view', 'orders:create', 'menu:view', 'sala:tables:view'],
+          permissions: ['orders:orders:view', 'orders:orders:create', 'menu:catalog:read', 'sala:tables:view'],
           mustChangePassword: false,
         },
       })

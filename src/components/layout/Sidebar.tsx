@@ -159,25 +159,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </div>
         </div>
-
-        {/* {onCloseMobile && (
-          <button
-            type="button"
-            className="fmat-mobile-close-btn"
-            onClick={onCloseMobile}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--color-muted)',
-              cursor: 'pointer',
-              padding: '6px',
-              borderRadius: 'var(--radius-control)',
-            }}
-            aria-label="Cerrar navegación"
-          >
-            <XIcon size={20} />
-          </button>
-        )} */}
       </div>
 
       {/* Navigation Links */}

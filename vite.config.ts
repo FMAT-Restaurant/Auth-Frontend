@@ -139,7 +139,6 @@ export default defineConfig(({ mode }) => {
           'src/types/**',
           'src/components/ui/Icons.tsx',
           'src/components/layout/ModulePlaceholderView.tsx',
-          'src/components/auth/RegisterRestaurantForm.tsx',
           'src/**/*.test.{ts,tsx}',
         ],
       },
