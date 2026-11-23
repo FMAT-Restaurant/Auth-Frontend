@@ -46,7 +46,8 @@ export const StaffDetailDrawer: React.FC<StaffDetailDrawerProps> = ({
       setLastName(collaborator.lastName || '');
       setSelectedRoles(collaborator.roles || []);
       setIsActive(collaborator.isActive ?? true);
-      setTempPassword(collaborator.temporaryPassword || null);
+      // La contraseña temporal solo se conoce justo después de restablecerla.
+      setTempPassword(null);
       setSaveSuccessMsg(null);
       setErrorMsg(null);
       setIsCopied(false);

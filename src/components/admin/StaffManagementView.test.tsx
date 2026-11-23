@@ -41,7 +41,6 @@ const mockStaff: User[] = [
     permissions: ['orders:view'],
     isActive: true,
     mustChangePassword: true,
-    temporaryPassword: 'TMP-111',
   },
 ];
 

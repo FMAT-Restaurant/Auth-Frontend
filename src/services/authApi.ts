@@ -50,7 +50,6 @@ export interface BackendStaffItem {
   permissions?: string[];
   isActive: boolean;
   passwordStatus: string;
-  temporaryPassword?: string | null;
   passwordResetRequested?: boolean;
   createdAt?: string;
 }
@@ -541,7 +540,6 @@ export const authApi = {
             : rolesToPermissions(roles),
         isActive: item.isActive,
         passwordStatus: item.passwordStatus as 'TEMPORARY' | 'ACTIVE',
-        temporaryPassword: item.temporaryPassword,
         passwordResetRequested: Boolean(item.passwordResetRequested),
         mustChangePassword: item.passwordStatus === 'TEMPORARY',
       };
@@ -586,7 +584,6 @@ export const authApi = {
           : rolesToPermissions(roles),
       isActive: data.isActive,
       passwordStatus: data.passwordStatus,
-      temporaryPassword: data.temporaryPassword,
       passwordResetRequested: Boolean(data.passwordResetRequested),
       mustChangePassword: data.passwordStatus === 'TEMPORARY',
     };
@@ -656,7 +653,6 @@ export const authApi = {
             : rolesToPermissions(roles),
         isActive: true,
         passwordStatus: 'TEMPORARY',
-        temporaryPassword: data.temporaryPassword,
         mustChangePassword: true,
       },
     };
