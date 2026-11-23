@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { authApi, formatErrorMessage } from './authApi';
+import { authApi, formatErrorMessage, resolveApiBase } from './authApi';
 import { authStorage } from './authStorage';
 
 describe('authApi', () => {
@@ -15,6 +15,19 @@ describe('authApi', () => {
     expect(formatErrorMessage({ error: 'Alt error' }, 'Fallback')).toBe('Alt error');
     expect(formatErrorMessage(null, 'Fallback')).toBe('Fallback');
     expect(formatErrorMessage({}, 'Fallback')).toBe('Fallback');
+  });
+
+  it('usa el mismo origen (/api/v1, vía API Gateway) por defecto o con "auto"', () => {
+    expect(resolveApiBase(undefined)).toBe('/api/v1');
+    expect(resolveApiBase('')).toBe('/api/v1');
+    expect(resolveApiBase('  AUTO ')).toBe('/api/v1');
+    // Nunca apunta directo al backend en el puerto 4000.
+    expect(resolveApiBase(undefined)).not.toContain(':4000');
+  });
+
+  it('respeta una URL explícita y le quita la barra final', () => {
+    expect(resolveApiBase('http://192.168.1.50:8000/api/v1/')).toBe('http://192.168.1.50:8000/api/v1');
+    expect(resolveApiBase('/api/v1')).toBe('/api/v1');
   });
 
   it('returns API base URL and checks setupStatus', async () => {
