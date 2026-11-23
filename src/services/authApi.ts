@@ -11,7 +11,11 @@ import { authStorage } from './authStorage';
 export function resolveApiBase(configuredValue?: string): string {
   const configured = configuredValue?.trim();
   if (configured && configured.toLowerCase() !== 'auto') {
-    return configured.replace(/\/+$/, '');
+    let base = configured;
+    while (base.length > 1 && base.endsWith('/')) {
+      base = base.slice(0, -1);
+    }
+    return base;
   }
   return '/api/v1';
 }
