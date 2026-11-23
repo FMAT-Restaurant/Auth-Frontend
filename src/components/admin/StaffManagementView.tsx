@@ -371,11 +371,11 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({ curren
                 </div>
 
                 {/* Selector de Roles Existentes */}
-                <div>
+                <div role="group" aria-labelledby="new-staff-roles-heading">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                    <span id="new-staff-roles-heading" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>
                       Asignar Rol(es) del Restaurante *
-                    </label>
+                    </span>
 
                     <button
                       type="button"

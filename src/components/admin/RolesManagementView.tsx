@@ -595,10 +595,10 @@ export const RolesManagementView: React.FC<RolesManagementViewProps> = ({
           </div>
 
           {/* Catálogo de permisos por microservicio con sidebar */}
-          <div>
-            <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)', display: 'block', marginBottom: '8px' }}>
+          <div role="group" aria-labelledby="role-permissions-heading">
+            <span id="role-permissions-heading" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)', display: 'block', marginBottom: '8px' }}>
               Permisos por Microservicio (selecciona los accesos autorizados) *
-            </label>
+            </span>
 
             <PermissionsCatalogPicker
               catalog={catalog}
