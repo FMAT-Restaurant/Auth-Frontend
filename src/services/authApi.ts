@@ -103,7 +103,7 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     'sala:table_unions:view',
     'sala:table_unions:create',
     'sala:table_unions:release',
-    'menu:entries:view',
+    'menu:catalog:read',
   ],
   CHEF_MASTER: [
     'kitchen:queues:view',
@@ -115,15 +115,27 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     'kitchen:orders:void_error',
     'orders:orders:view',
   ],
+  COCINERO: [
+    'kitchen:queues:view',
+    'kitchen:orders:start_preparation',
+    'kitchen:items:ready',
+    'kitchen:orders:ready',
+    'kitchen:items:reject',
+  ],
   GESTOR_MENU: [
-    'menu:entries:view',
-    'menu:entries:manage',
-    'menu:categories:view',
-    'menu:categories:manage',
-    'menu:recipes:view',
-    'menu:recipes:manage',
-    'menu:offers:view',
-    'menu:offers:manage',
+    'menu:catalog:read',
+    'menu:catalog:print',
+    'menu:categories:read',
+    'menu:categories:write',
+    'menu:entries:read',
+    'menu:entries:write',
+    'menu:entries:status',
+    'menu:offers:read',
+    'menu:offers:write',
+    'menu:offers:status',
+    'menu:recipes:read',
+    'menu:recipes:write',
+    'menu:images:write',
   ],
   CAJERO: ['billing:invoices:create', 'billing:reports:view'],
 };
@@ -160,25 +172,26 @@ async function authenticatedFetch(
     }
     return fetch(`${API_BASE}${endpoint}`, {
       ...options,
+      credentials: 'include',
       headers,
     });
   };
 
   let res = await buildRequest(token);
 
-  // Si el access token expiró (401), intentamos renovarlo transparentemente con el refresh token
+  // Si el access token expiró (401), intentamos renovarlo usando la cookie HttpOnly de refresh token
   if (res.status === 401) {
     const currentSession = authStorage.getSession();
-    const refreshToken = currentSession?.refreshToken;
 
-    if (refreshToken) {
+    if (currentSession) {
       try {
         if (!refreshPromise) {
           refreshPromise = (async () => {
             const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
               method: 'POST',
+              credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refreshToken }),
+              body: JSON.stringify({}),
             });
 
             if (!refreshRes.ok) {
@@ -187,14 +200,12 @@ async function authenticatedFetch(
 
             const refreshData = await refreshRes.json();
             const newAccessToken: string = refreshData.accessToken;
-            const newRefreshToken: string = refreshData.refreshToken || refreshToken;
 
             const existing = authStorage.getSession();
             if (existing) {
               authStorage.saveSession({
                 ...existing,
                 accessToken: newAccessToken,
-                refreshToken: newRefreshToken,
               });
             }
 
@@ -267,11 +278,20 @@ export const authApi = {
     return data;
   },
 
-  async login(identifier: string, password: string): Promise<AuthSession> {
+  async login(
+    identifier: string,
+    password: string,
+    loginType?: 'STAFF' | 'ADMIN',
+  ): Promise<AuthSession> {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier: identifier.trim(), password: password.trim() }),
+      body: JSON.stringify({
+        identifier: identifier.trim(),
+        password,
+        ...(loginType ? { loginType } : {}),
+      }),
     });
 
     const data = await res.json().catch(() => ({}));
@@ -306,7 +326,6 @@ export const authApi = {
 
     return {
       accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
       user,
     };
   },
@@ -319,6 +338,7 @@ export const authApi = {
   }): Promise<AuthSession> {
     const res = await fetch(`${API_BASE}/auth/setup-admin`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
     });
@@ -346,16 +366,16 @@ export const authApi = {
 
     return {
       accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
       user,
     };
   },
 
-  async refreshSession(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshSession(refreshToken?: string): Promise<{ accessToken: string; refreshToken?: string }> {
     const res = await fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
     });
 
     const data = await res.json().catch(() => ({}));
@@ -484,6 +504,7 @@ export const authApi = {
       }
       await fetch(`${API_BASE}/auth/logout`, {
         method: 'POST',
+        credentials: 'include',
         headers,
       });
     } catch {

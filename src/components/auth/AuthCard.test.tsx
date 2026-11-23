@@ -143,6 +143,25 @@ describe('AuthCard Component - Error Presentation & Setup Status UX', () => {
         expect(banners.length).toBeGreaterThan(0);
       });
     });
+
+    it('blocks admin email submission when Personal (Staff ID) tab is active', async () => {
+      const { container } = render(
+        <AuthCard
+          onLoginSuccess={mockOnLoginSuccess}
+          onRequirePasswordChange={mockOnRequirePasswordChange}
+        />,
+      );
+
+      fireEvent.change(screen.getByLabelText(/Staff ID/i), { target: { value: 'admin@fmat.com' } });
+      fireEvent.change(screen.getByLabelText(/Contraseña/i), { target: { value: 'AdminPassword123!' } });
+      fireEvent.submit(container.querySelector('form')!);
+
+      await waitFor(() => {
+        const alert = screen.getByRole('alert');
+        expect(alert).toHaveTextContent(/El acceso de Personal requiere tu Staff ID/i);
+      });
+      expect(authApi.login).not.toHaveBeenCalled();
+    });
   });
 
   describe('SetupAdminForm - Configured State UX', () => {

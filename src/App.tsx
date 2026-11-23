@@ -76,7 +76,7 @@ export const App: React.FC = () => {
     setIsChangePasswordOpen(true);
   };
 
-  const handlePasswordChangeSuccess = (newToken?: string, newRefreshToken?: string) => {
+  const handlePasswordChangeSuccess = (newToken?: string) => {
     isLoggingOutRef.current = false;
     setIsSessionExpired(false);
     if (tempUser) {
@@ -85,11 +85,9 @@ export const App: React.FC = () => {
         mustChangePassword: false,
       };
       const resolvedToken = newToken || tempToken || currentSession?.accessToken || 'mock_jwt_activated_token';
-      // Se conserva el refresh token: sin él, la sesión no se podía renovar y el
-      // usuario era expulsado al vencer el access token (causa raíz de BUG-SEC-001)
+      // El refresh token vive en cookie HttpOnly; localStorage solo conserva accessToken y user.
       const newSession: AuthSession = {
         accessToken: resolvedToken,
-        refreshToken: newRefreshToken || currentSession?.refreshToken,
         user: activeUser,
       };
       hasActiveSessionRef.current = true;

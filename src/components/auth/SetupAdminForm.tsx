@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Input, MailIcon, LockIcon, UserIcon, AlertCircleIcon, ShieldIcon, LoaderIcon } from '../ui';
 import { authApi } from '../../services/authApi';
+import { validateStrongPassword } from '../../utils/passwordValidation';
 import type { AuthSession } from '../../types/auth';
 
 export interface SetupAdminFormProps {
@@ -29,6 +30,12 @@ export const SetupAdminForm: React.FC<SetupAdminFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const passwordError = validateStrongPassword(password, [email.trim()]);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden');

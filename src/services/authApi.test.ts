@@ -75,7 +75,7 @@ describe('authApi', () => {
     expect(staffSession.user.mustChangePassword).toBe(true);
     expect(staffSession.user.permissions).toContain('orders:orders:view');
     expect(staffSession.user.permissions).toContain('inventory:items:read');
-    expect(staffSession.user.permissions).toContain('menu:entries:view');
+    expect(staffSession.user.permissions).toContain('menu:catalog:read');
     expect(staffSession.user.permissions).toContain('sala:tables:view');
     expect(staffSession.user.permissions).toContain('kitchen:queues:view');
     expect(staffSession.user.permissions).toContain('billing:invoices:create');

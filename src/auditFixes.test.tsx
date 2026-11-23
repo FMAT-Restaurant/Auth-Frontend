@@ -74,15 +74,16 @@ describe('Correcciones de la auditoría QA', () => {
       unsubscribe();
     });
 
-    it('conserva el refresh token después de cambiar la contraseña temporal', async () => {
+    it('no persiste el refresh token en localStorage tras cambiar la contraseña temporal', async () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-        new Response(JSON.stringify({ accessToken: 'nuevo-access', refreshToken: 'nuevo-refresh' }), {
+        new Response(JSON.stringify({ accessToken: 'nuevo-access' }), {
           status: 200,
         }),
       );
 
-      const res = await authApi.changeInitialPassword('Temporal123', 'NuevaClave123', 'token');
-      expect(res).toEqual({ accessToken: 'nuevo-access', refreshToken: 'nuevo-refresh' });
+      const res = await authApi.changeInitialPassword('Temporal123', 'NuevaClave123!', 'token');
+      expect(res.accessToken).toBe('nuevo-access');
+      expect(localStorage.getItem('fmat_restaurant_auth_session')).toBeNull();
     });
 
     it('cerrar sesión con token expirado no dispara refresh ni marca sesión expirada', async () => {
@@ -160,6 +161,7 @@ describe('Correcciones de la auditoría QA', () => {
       expect(screen.getByText('Bienvenido, Gerente General', { exact: false })).toBeInTheDocument();
       expect(screen.queryByText('Tu sesión ha expirado')).not.toBeInTheDocument();
       expect(authStorage.getSession()?.accessToken).toBe('fresh-access');
+      expect(localStorage.getItem('fmat_restaurant_auth_session')).not.toContain('refreshToken');
       expect(fetchSpy).toHaveBeenCalled();
     });
   });

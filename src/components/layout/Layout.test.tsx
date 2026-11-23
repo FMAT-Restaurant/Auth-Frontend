@@ -128,7 +128,16 @@ describe('Layout, DashboardHomeView, and ChangePasswordModal', () => {
     fireEvent.change(newInput, { target: { value: '123' } });
     fireEvent.change(confirmInput, { target: { value: '123' } });
     fireEvent.click(screen.getByText('Guardar nueva contraseña'));
-    expect(screen.getByText('La nueva contraseña debe tener al menos 6 caracteres')).toBeInTheDocument();
+    expect(screen.getByText('La contraseña debe tener al menos 8 caracteres')).toBeInTheDocument();
+
+    fireEvent.change(newInput, { target: { value: 'solominusculas' } });
+    fireEvent.change(confirmInput, { target: { value: 'solominusculas' } });
+    fireEvent.click(screen.getByText('Guardar nueva contraseña'));
+    expect(
+      screen.getByText(
+        'La contraseña debe incluir al menos una mayúscula, una minúscula, un número y un símbolo especial',
+      ),
+    ).toBeInTheDocument();
 
     fireEvent.change(newInput, { target: { value: 'Temp123!' } });
     fireEvent.change(confirmInput, { target: { value: 'Temp123!' } });

@@ -16,6 +16,11 @@ const mockSession: AuthSession = {
   },
 };
 
+const expectedStoredSession: AuthSession = {
+  accessToken: 'token-123',
+  user: mockSession.user,
+};
+
 describe('authStorage', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -23,17 +28,26 @@ describe('authStorage', () => {
     vi.restoreAllMocks();
   });
 
-  it('saves, retrieves, and clears session', () => {
+  it('saves, retrieves, and clears session without persisting refreshToken in localStorage', () => {
     expect(authStorage.getSession()).toBeNull();
 
     authStorage.saveSession(mockSession);
-    expect(authStorage.getSession()).toEqual(mockSession);
+    expect(authStorage.getSession()).toEqual(expectedStoredSession);
+    expect(localStorage.getItem('fmat_restaurant_auth_session')).not.toContain('refresh-123');
+    expect(localStorage.getItem('fmat_restaurant_auth_session')).not.toContain('refreshToken');
 
     authStorage.saveSession(mockSession);
 
     authStorage.clearSession();
     expect(authStorage.getSession()).toBeNull();
     authStorage.clearSession();
+  });
+
+  it('strips legacy refreshToken from localStorage when reading', () => {
+    localStorage.setItem('fmat_restaurant_auth_session', JSON.stringify(mockSession));
+    const loaded = authStorage.getSession();
+    expect(loaded).toEqual(expectedStoredSession);
+    expect(localStorage.getItem('fmat_restaurant_auth_session')).not.toContain('refreshToken');
   });
 
   it('notifies subscribers on save and clear, and handles listener errors', () => {
@@ -47,7 +61,7 @@ describe('authStorage', () => {
     const unsub2 = authStorage.subscribe(failingListener);
 
     authStorage.saveSession(mockSession);
-    expect(listener).toHaveBeenCalledWith(mockSession);
+    expect(listener).toHaveBeenCalledWith(expectedStoredSession);
     expect(consoleSpy).toHaveBeenCalled();
 
     authStorage.clearSession();

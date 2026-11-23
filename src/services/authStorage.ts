@@ -7,16 +7,25 @@ const listeners = new Set<SessionListener>();
 const expiredListeners = new Set<() => void>();
 let lastSavedJson: string | null = null;
 
+function sanitizeSession(session: AuthSession): AuthSession {
+  // El refresh token nunca se guarda en localStorage; vive únicamente en cookie HttpOnly.
+  return {
+    accessToken: session.accessToken,
+    user: session.user,
+  };
+}
+
 export const authStorage = {
   saveSession: (session: AuthSession): void => {
     try {
-      const json = JSON.stringify(session);
+      const safeSession = sanitizeSession(session);
+      const json = JSON.stringify(safeSession);
       if (json === lastSavedJson) return;
       lastSavedJson = json;
       localStorage.setItem(STORAGE_KEY, json);
       listeners.forEach((listener) => {
         try {
-          listener(session);
+          listener(safeSession);
         } catch (e) {
           console.error('Error al notificar listener de sesión:', e);
         }
@@ -30,8 +39,16 @@ export const authStorage = {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) return null;
+      const parsed = JSON.parse(data) as AuthSession;
+      if (parsed && 'refreshToken' in parsed) {
+        const sanitized = sanitizeSession(parsed);
+        const cleanJson = JSON.stringify(sanitized);
+        lastSavedJson = cleanJson;
+        localStorage.setItem(STORAGE_KEY, cleanJson);
+        return sanitized;
+      }
       lastSavedJson = data;
-      return JSON.parse(data) as AuthSession;
+      return parsed;
     } catch (err) {
       console.error('Error al leer sesión de localStorage:', err);
       return null;
