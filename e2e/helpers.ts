@@ -35,50 +35,44 @@ export function setupConsoleMonitor(page: Page): {
   return { errors, warnings };
 }
 
+/**
+ * La sesión vive solo en memoria (#6): al cargar, la app la recupera con
+ * POST /auth/refresh (cookie HttpOnly) y GET /auth/me. Las pruebas simulan esas
+ * dos respuestas del backend en lugar de escribir en localStorage.
+ */
+async function mockRestoredSession(page: Page, accessToken: string, me: Record<string, unknown>) {
+  await page.route('**/api/v1/auth/refresh', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ accessToken }) }),
+  );
+  await page.route('**/api/v1/auth/me', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(me) }),
+  );
+}
+
 export async function injectAdminSession(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      'fmat_restaurant_auth_session',
-      JSON.stringify({
-        accessToken: 'mock_admin_jwt_token_for_audit',
-        user: {
-          id: 'b29ba2fc-4ac9-4ac9-af46-986a4089dbd5',
-          userType: 'ADMIN',
-          staffId: 'ADM000001',
-          email: 'admin@fmat.com',
-          firstName: 'Héctor',
-          lastName: 'Pizza',
-          displayName: 'Héctor Pizza',
-          roleLabel: 'Administrador',
-          roles: ['ADMINISTRADOR'],
-          permissions: ['*'],
-          mustChangePassword: false,
-        },
-      })
-    );
+  await mockRestoredSession(page, 'mock_admin_jwt_token_for_audit', {
+    id: 'b29ba2fc-4ac9-4ac9-af46-986a4089dbd5',
+    userType: 'ADMIN',
+    email: 'admin@fmat.com',
+    firstName: 'Héctor',
+    lastName: 'Pizza',
+    staffProfile: { staffId: 'ADM000001', firstName: 'Héctor', lastName: 'Pizza' },
+    roles: ['ADMINISTRADOR'],
+    permissions: ['*'],
+    passwordStatus: 'ACTIVE',
   });
 }
 
 export async function injectStaffSession(page: Page, roles: string[] = ['MESERO']) {
-  await page.addInitScript((rolesParam) => {
-    localStorage.setItem(
-      'fmat_restaurant_auth_session',
-      JSON.stringify({
-        accessToken: 'mock_staff_jwt_token_for_audit',
-        user: {
-          id: '59aaa30e-4075-436e-9c61-b35a49fadbc3',
-          userType: 'STAFF',
-          staffId: 'M000003',
-          email: null,
-          firstName: 'Tony',
-          lastName: 'Polanco',
-          displayName: 'Tony Polanco',
-          roleLabel: rolesParam.join(', '),
-          roles: rolesParam,
-          permissions: ['orders:orders:view', 'orders:orders:create', 'menu:catalog:read', 'sala:tables:view'],
-          mustChangePassword: false,
-        },
-      })
-    );
-  }, roles);
+  await mockRestoredSession(page, 'mock_staff_jwt_token_for_audit', {
+    id: '59aaa30e-4075-436e-9c61-b35a49fadbc3',
+    userType: 'STAFF',
+    email: null,
+    firstName: 'Tony',
+    lastName: 'Polanco',
+    staffProfile: { staffId: 'M000003', firstName: 'Tony', lastName: 'Polanco' },
+    roles,
+    permissions: ['orders:orders:view', 'orders:orders:create', 'menu:catalog:read', 'sala:tables:view'],
+    passwordStatus: 'ACTIVE',
+  });
 }

@@ -10,6 +10,7 @@ import { SunIcon, MoonIcon } from './components/ui/Icons';
 import { Modal, Button } from './components/ui';
 import { authStorage } from './services/authStorage';
 import { authApi } from './services/authApi';
+import { requestSessionFromOtherTabs, startSessionSync } from './services/sessionSync';
 import type { NavModuleId } from './components/layout/Sidebar';
 import type { User, AuthSession } from './types/auth';
 
@@ -24,6 +25,9 @@ export const App: React.FC = () => {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [activeModule, setActiveModule] = useState<NavModuleId>('inicio');
   const [isSessionExpired, setIsSessionExpired] = useState(false);
+  // La sesión solo vive en memoria (#6): al cargar se intenta recuperar de otra
+  // pestaña o con la cookie del refresh token antes de mostrar el login.
+  const [isRestoring, setIsRestoring] = useState(() => !authStorage.getSession());
   const hasActiveSessionRef = useRef(Boolean(currentSession));
   const isLoggingOutRef = useRef(false);
 
@@ -45,10 +49,34 @@ export const App: React.FC = () => {
       setIsSessionExpired(true);
     });
 
+    const stopSync = startSessionSync();
+
     return () => {
       unsubscribe();
       unsubscribeExpired();
+      stopSync();
     };
+  }, []);
+
+  useEffect(() => {
+    if (!isRestoring) return;
+    let cancelled = false;
+    void (async () => {
+      // Si el efecto corre dos veces (StrictMode), ambas esperan la MISMA
+      // restauración (authApi.restoreSession comparte la petición en curso).
+      const fromOtherTab = await requestSessionFromOtherTabs();
+      const restored = fromOtherTab ?? (await authApi.restoreSession());
+      if (cancelled) return;
+      if (restored && !authStorage.getSession()) {
+        authStorage.saveSession(restored);
+      }
+      setIsRestoring(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Solo al montar: después, login/logout manejan la sesión.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -141,6 +169,26 @@ export const App: React.FC = () => {
   };
 
   // 1. Pantalla de AutenticaciÃ³n (si no hay sesiÃ³n)
+  if (!currentSession && isRestoring) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'var(--color-canvas)',
+          color: 'var(--color-muted)',
+          fontSize: '14px',
+        }}
+      >
+        Cargando sesión…
+      </div>
+    );
+  }
+
   if (!currentSession) {
     return (
       <div
