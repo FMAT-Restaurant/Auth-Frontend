@@ -62,9 +62,21 @@ La aplicación web estará disponible en [http://localhost:3000](http://localhos
    ```
 
    ```env
-   # URL base de la API del Backend (por defecto http://localhost:4000/api/v1)
-   VITE_API_BASE_URL=http://localhost:4000/api/v1
+   # "auto" = mismo origen (/api/v1); Vite reenvía /api al API Gateway
+   VITE_API_BASE_URL=auto
+   # Destino del Gateway para ese proxy (se resuelve en tu máquina)
+   VITE_GATEWAY_TARGET=http://localhost:8000
+   # Gateway para los microfrontends ("auto" = http://<host>:8000)
+   VITE_GATEWAY_URL=auto
    ```
+
+   **Toda la API pasa por el API Gateway.** El shell nunca llama directo a Auth-Backend (puerto 4000): pide `/api/v1/...` a su propio origen y el servidor de Vite (o nginx en producción) lo reenvía a Kong, que valida el JWT (`iss`, `aud`, `exp`) antes de llegar al backend. La cookie del refresh token queda como cookie de primera parte.
+
+   **Usarlo desde otra red (por ejemplo, la de la facultad):**
+   1. Levanta Auth-Backend, API-Gateway y `npm run dev` en tu equipo, como siempre.
+   2. Abre `http://<tu-IP>:3000` desde tu equipo o desde otros equipos de la red. El login, Personal y Roles funcionan sin cambiar nada, porque el proxy se resuelve en tu equipo.
+   3. Para los microfrontends (que llaman al Gateway en `http://<tu-IP>:8000`), agrega `http://<tu-IP>:3000` a `CORS_ORIGINS` en el `.env` del API-Gateway y recréalo (`docker compose up -d --force-recreate`).
+   4. Si varias personas inician sesión desde la misma red en poco tiempo, todas llegan al backend con la IP del Gateway; sube `AUTH_RATE_LIMIT` en el `.env` de Auth-Backend para la demo (el límite por cuenta sigue aplicando).
 
 3. **Iniciar servidor de desarrollo:**
    ```bash

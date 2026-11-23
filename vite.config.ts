@@ -16,7 +16,19 @@ export default defineConfig(({ mode }) => {
 
   const configuredGatewayUrl = env.VITE_GATEWAY_URL?.trim();
   const remotes: Record<string, string> = {};
-  const proxy: Record<string, { target: string; changeOrigin: boolean; rewrite: (p: string) => string }> = {};
+  const proxy: Record<
+    string,
+    { target: string; changeOrigin: boolean; ws?: boolean; rewrite?: (p: string) => string }
+  > = {};
+
+  // La API del shell se llama en el mismo origen (/api/v1) y este servidor la
+  // reenvía al API Gateway. El destino se resuelve aquí, en el servidor, así que
+  // la app funciona igual abierta desde localhost o desde cualquier IP de la red.
+  proxy['/api'] = {
+    target: env.VITE_GATEWAY_TARGET?.trim() || 'http://localhost:8000',
+    changeOrigin: true,
+    ws: true,
+  };
 
   for (const m of MODULE_CONFIGS) {
     const target =

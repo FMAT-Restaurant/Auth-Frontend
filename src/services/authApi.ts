@@ -1,19 +1,22 @@
 import type { User, AuthSession, RoleDefinition, ServicePermissionGroup } from '../types/auth';
 import { authStorage } from './authStorage';
 
-function resolveApiBase(): string {
-  const configured = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
+/**
+ * Por defecto ("auto" o sin definir) la API se llama en el MISMO origen que la
+ * app (`/api/v1`): en desarrollo el servidor de Vite y en producción nginx la
+ * reenvían al API Gateway. Así funciona con cualquier IP o hostname (por ejemplo,
+ * la IP de la red de la facultad) sin tocar CORS, y la cookie del refresh token
+ * es de primera parte. Una URL explícita sigue teniendo prioridad.
+ */
+export function resolveApiBase(configuredValue?: string): string {
+  const configured = configuredValue?.trim();
   if (configured && configured.toLowerCase() !== 'auto') {
-    return configured;
+    return configured.replace(/\/+$/, '');
   }
-  if (typeof window !== 'undefined' && window.location?.hostname) {
-    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-    return `${protocol}//${window.location.hostname}:4000/api/v1`;
-  }
-  return 'http://localhost:4000/api/v1';
+  return '/api/v1';
 }
 
-const API_BASE = resolveApiBase();
+const API_BASE = resolveApiBase(import.meta.env.VITE_API_BASE_URL as string | undefined);
 
 export interface LoginResponse {
   message: string;
