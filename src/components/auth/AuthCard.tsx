@@ -139,14 +139,6 @@ export const AuthCard: React.FC<AuthCardProps> = ({
           </div>
         )}
       </Card>
-
-      {/* Footer info */}
-      {/* <div style={{ textAlign: 'center', marginTop: '24px' }}>
-        <p style={{ fontSize: '12px', color: 'var(--color-muted)' }}>
-          UADY · Verificación y Validación 2026
-        </p>
-      </div>
-      */}
     </div>
   );
 };

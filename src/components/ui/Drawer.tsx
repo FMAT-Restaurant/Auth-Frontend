@@ -54,16 +54,30 @@ export const Drawer: React.FC<DrawerProps> = ({
         justifyContent: 'flex-end',
         animation: 'fmatFadeIn 0.15s ease-out',
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
     >
+      {/* Fondo: un botón nativo detrás del panel cierra al hacer clic fuera.
+          Fuera del orden de tabulación; con teclado se cierra con Escape. */}
+      <button
+        type="button"
+        aria-label="Cerrar panel (fondo)"
+        tabIndex={-1}
+        onClick={onClose}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          padding: 0,
+          border: 'none',
+          background: 'transparent',
+          cursor: 'default',
+        }}
+      />
       <div
         role="dialog"
         aria-modal="true"
         style={{
+          position: 'relative',
           width: '100%',
           maxWidth: width,
           height: '100%',

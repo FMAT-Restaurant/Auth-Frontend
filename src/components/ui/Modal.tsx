@@ -57,14 +57,33 @@ export const Modal: React.FC<ModalProps> = ({
         padding: '16px',
         animation: 'fmatFadeIn 0.15s ease-out',
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && onClose && closeOnOverlayClick) {
-          onClose();
-        }
-      }}
     >
+      {/* Fondo: botón nativo detrás del contenido; solo cierra si se permite.
+          Fuera del orden de tabulación; con teclado se cierra con Escape. */}
+      {onClose && closeOnOverlayClick && (
+        <button
+          type="button"
+          aria-label="Cerrar ventana (fondo)"
+          tabIndex={-1}
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            padding: 0,
+            border: 'none',
+            background: 'transparent',
+            cursor: 'default',
+          }}
+        />
+      )}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         style={{
+          position: 'relative',
           backgroundColor: 'var(--color-surface)',
           borderRadius: 'var(--radius-card)',
           boxShadow: 'var(--shadow-modal)',

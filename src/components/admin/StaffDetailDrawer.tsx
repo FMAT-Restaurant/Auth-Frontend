@@ -438,10 +438,10 @@ export const StaffDetailDrawer: React.FC<StaffDetailDrawerProps> = ({
           </div>
 
           {/* Selector de Roles Operativos */}
-          <div>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink)', display: 'block', marginBottom: '8px' }}>
+          <div role="group" aria-labelledby="staff-roles-heading">
+            <span id="staff-roles-heading" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink)', display: 'block', marginBottom: '8px' }}>
               Roles Operativos Asignados (al menos uno) *
-            </label>
+            </span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {availableRoles
                 .filter((r) => r.code !== 'ADMINISTRADOR')

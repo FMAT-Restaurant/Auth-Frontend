@@ -119,5 +119,33 @@ describe('UI Components', () => {
     const drawerCloseBtn = screen.getByLabelText('Cerrar panel');
     fireEvent.click(drawerCloseBtn);
     expect(onCloseDrawer).toHaveBeenCalledTimes(2);
+
+    // Clic en el fondo (botón nativo, fuera del orden de tabulación).
+    const modalBackdrop = screen.getByLabelText('Cerrar ventana (fondo)');
+    expect(modalBackdrop).toHaveAttribute('tabindex', '-1');
+    fireEvent.click(modalBackdrop);
+    expect(onCloseModal).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(screen.getByLabelText('Cerrar panel (fondo)'));
+    expect(onCloseDrawer).toHaveBeenCalledTimes(3);
+
+    // Clic dentro del contenido no cierra.
+    fireEvent.click(screen.getByText('Contenido Modal'));
+    fireEvent.click(screen.getByText('Contenido Drawer'));
+    expect(onCloseModal).toHaveBeenCalledTimes(2);
+    expect(onCloseDrawer).toHaveBeenCalledTimes(3);
+  });
+
+  it('Modal sin closeOnOverlayClick no tiene fondo clicable', () => {
+    const onClose = vi.fn();
+    render(
+      <Modal isOpen={true} onClose={onClose} title="Confirmar">
+        Contenido
+      </Modal>,
+    );
+    expect(screen.queryByLabelText('Cerrar ventana (fondo)')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Confirmar' })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

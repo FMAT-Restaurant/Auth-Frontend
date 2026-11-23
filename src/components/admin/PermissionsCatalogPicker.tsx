@@ -256,9 +256,12 @@ export const PermissionsCatalogPicker: React.FC<PermissionsCatalogPickerProps> =
                           key={perm.code}
                           title={perm.code}
                           style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '8px',
+                            // Rejilla: casilla a la izquierda y nombre/descripción a la
+                            // derecha, con el texto como hijo directo de <label>.
+                            display: 'grid',
+                            gridTemplateColumns: 'auto minmax(0, 1fr)',
+                            columnGap: '8px',
+                            alignItems: 'start',
                             padding: '6px 8px',
                             borderRadius: 'var(--radius-sm)',
                             backgroundColor: isChecked
@@ -278,29 +281,28 @@ export const PermissionsCatalogPicker: React.FC<PermissionsCatalogPickerProps> =
                               width: '15px',
                               height: '15px',
                               marginTop: '2px',
-                              flexShrink: 0,
+                              gridRow: '1 / span 2',
                             }}
                           />
-                          <div style={{ minWidth: 0 }}>
-                            <div
-                              style={{
-                                fontSize: '12px',
-                                fontWeight: 600,
-                                color: 'var(--color-ink)',
-                              }}
-                            >
-                              {perm.label}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: '11px',
-                                color: 'var(--color-muted)',
-                                lineHeight: 1.3,
-                              }}
-                            >
-                              {perm.description}
-                            </div>
-                          </div>
+                          <span
+                            style={{
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              color: 'var(--color-ink)',
+                            }}
+                          >
+                            {perm.label}
+                          </span>
+                          <span
+                            style={{
+                              gridColumn: 2,
+                              fontSize: '11px',
+                              color: 'var(--color-muted)',
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            {perm.description}
+                          </span>
                         </label>
                       );
                     })}

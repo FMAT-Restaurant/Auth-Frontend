@@ -62,13 +62,13 @@ test.describe('03 - Auditoría UI: Módulo de Gestión de Personal y Roles', () 
             code: 'MESERO',
             name: 'Mesero',
             description: 'Gestión y toma de órdenes de comensales',
-            permissions: ['orders:view', 'orders:create', 'menu:view', 'sala:tables:view'],
+            permissions: ['orders:orders:view', 'orders:orders:create', 'menu:catalog:read', 'sala:tables:view'],
           },
           {
             code: 'HOST',
             name: 'Host / Anfitrión',
             description: 'Recepción y asignación de mesas en sala',
-            permissions: ['sala:tables:view', 'sala:tables:assign_diner', 'sala:tables:assign_waiter'],
+            permissions: ['sala:tables:view', 'sala:tables:occupy', 'sala:tables:assign_waiter'],
           },
           {
             code: 'CHEF_MASTER',
@@ -90,15 +90,15 @@ test.describe('03 - Auditoría UI: Módulo de Gestión de Personal y Roles', () 
             serviceName: 'Módulo de Sala',
             permissions: [
               { code: 'sala:tables:view', description: 'Visualizar mesas' },
-              { code: 'sala:tables:assign_diner', description: 'Asignar comensal' },
+              { code: 'sala:tables:occupy', description: 'Ocupar mesas' },
             ],
           },
           {
             serviceKey: 'orders',
             serviceName: 'Módulo de Órdenes',
             permissions: [
-              { code: 'orders:view', description: 'Ver comandas y pedidos' },
-              { code: 'orders:create', description: 'Crear nuevas comandas' },
+              { code: 'orders:orders:view', description: 'Ver comandas y pedidos' },
+              { code: 'orders:orders:create', description: 'Crear nuevas comandas' },
             ],
           },
         ]),
