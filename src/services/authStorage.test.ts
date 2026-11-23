@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { authStorage, sanitizeSession } from './authStorage';
+import { authStorage, sanitizeSession, LEGACY_STORAGE_KEY } from './authStorage';
 import type { AuthSession } from '../types/auth';
 
 const mockSession: AuthSession = {
@@ -28,13 +28,13 @@ describe('authStorage', () => {
     vi.restoreAllMocks();
   });
 
-  it('saves, retrieves, and clears session without persisting refreshToken in localStorage', () => {
+  it('[#6] guarda la sesión solo en memoria, sin refreshToken y nunca en localStorage', () => {
     expect(authStorage.getSession()).toBeNull();
 
     authStorage.saveSession(mockSession);
     expect(authStorage.getSession()).toEqual(expectedStoredSession);
-    expect(localStorage.getItem('fmat_restaurant_auth_session')).not.toContain('refresh-123');
-    expect(localStorage.getItem('fmat_restaurant_auth_session')).not.toContain('refreshToken');
+    expect(localStorage.getItem('fmat_restaurant_auth_session')).toBeNull();
+    expect(localStorage.length).toBe(0);
 
     authStorage.saveSession(mockSession);
 
@@ -43,11 +43,11 @@ describe('authStorage', () => {
     authStorage.clearSession();
   });
 
-  it('strips legacy refreshToken from localStorage when reading', () => {
-    localStorage.setItem('fmat_restaurant_auth_session', JSON.stringify(mockSession));
-    const loaded = authStorage.getSession();
-    expect(loaded).toEqual(expectedStoredSession);
-    expect(localStorage.getItem('fmat_restaurant_auth_session')).not.toContain('refreshToken');
+  it('[#6] no lee sesiones de localStorage y borra la que dejaron versiones anteriores', () => {
+    localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(mockSession));
+    expect(authStorage.getSession()).toBeNull();
+    authStorage.clearSession();
+    expect(localStorage.getItem(LEGACY_STORAGE_KEY)).toBeNull();
   });
 
   it('notifies subscribers on save and clear, and handles listener errors', () => {
@@ -71,23 +71,36 @@ describe('authStorage', () => {
     unsub2();
   });
 
-  it('handles corrupted JSON and storage errors gracefully', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    localStorage.setItem('fmat_restaurant_auth_session', '{bad-json');
-    expect(authStorage.getSession()).toBeNull();
-
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new Error('quota exceeded');
-    });
-    authStorage.saveSession({ ...mockSession, accessToken: 'new-token' });
-
+  it('tolera un localStorage que falla al borrar la sesión antigua', () => {
     vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
       throw new Error('remove error');
     });
-    localStorage.setItem('fmat_restaurant_auth_session', 'val');
-    authStorage.clearSession();
+    authStorage.saveSession(mockSession);
+    expect(() => authStorage.clearSession()).not.toThrow();
+    expect(authStorage.getSession()).toBeNull();
+  });
 
-    expect(consoleSpy).toHaveBeenCalled();
+  it('expireSession sin oyentes equivale a clearSession y con oyentes los avisa', () => {
+    const listener = vi.fn();
+    const off = authStorage.subscribe(listener);
+    authStorage.saveSession(mockSession);
+    authStorage.expireSession();
+    expect(authStorage.getSession()).toBeNull();
+    expect(listener).toHaveBeenLastCalledWith(null);
+
+    authStorage.saveSession(mockSession);
+    const expired = vi.fn();
+    const failing = vi.fn(() => { throw new Error('x'); });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const offExpired = authStorage.onSessionExpired(expired);
+    const offFailing = authStorage.onSessionExpired(failing);
+    authStorage.expireSession();
+    expect(expired).toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalled();
+    expect(authStorage.getSession()).toBeNull();
+    offExpired();
+    offFailing();
+    off();
   });
 });
 
@@ -175,23 +188,6 @@ describe('sanitizeSession (Sonar S8475: no persistir contenido arbitrario)', () 
     });
   });
 
-  it('getSession descarta y borra contenido manipulado en localStorage', () => {
-    localStorage.setItem('fmat_restaurant_auth_session', JSON.stringify({ accessToken: 't', user: { id: 1 } }));
-    expect(authStorage.getSession()).toBeNull();
-    expect(localStorage.getItem('fmat_restaurant_auth_session')).toBeNull();
-  });
-
-  it('getSession limpia campos desconocidos y reescribe lo guardado', () => {
-    localStorage.setItem(
-      'fmat_restaurant_auth_session',
-      JSON.stringify({ accessToken: 't', refreshToken: 'r', user: { ...validUser, extra: 1 } }),
-    );
-    expect(authStorage.getSession()).toEqual({ accessToken: 't', user: validUser });
-    expect(JSON.parse(localStorage.getItem('fmat_restaurant_auth_session') as string)).toEqual({
-      accessToken: 't',
-      user: validUser,
-    });
-  });
 
   it('saveSession no guarda ni notifica una sesión inválida', () => {
     const listener = vi.fn();

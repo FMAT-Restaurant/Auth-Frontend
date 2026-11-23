@@ -161,7 +161,8 @@ describe('Correcciones de la auditoría QA', () => {
       expect(screen.getByText('Bienvenido, Gerente General', { exact: false })).toBeInTheDocument();
       expect(screen.queryByText('Tu sesión ha expirado')).not.toBeInTheDocument();
       expect(authStorage.getSession()?.accessToken).toBe('fresh-access');
-      expect(localStorage.getItem('fmat_restaurant_auth_session')).not.toContain('refreshToken');
+      // [#6] La sesión ya no se guarda en localStorage.
+      expect(localStorage.getItem('fmat_restaurant_auth_session')).toBeNull();
       expect(fetchSpy).toHaveBeenCalled();
     });
   });

@@ -143,3 +143,65 @@ describe('authApi: renovación de sesión ante 401', () => {
     expect(refreshCalls).toHaveLength(1);
   });
 });
+
+describe('authApi.restoreSession (#6: recuperar la sesión al recargar)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    authStorage.clearSession();
+  });
+
+  it('renueva con la cookie y obtiene el usuario con el token nuevo', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(json({ accessToken: 'restored-token' }))
+      .mockResolvedValueOnce(
+        json({ id: 'u9', userType: 'ADMIN', email: 'admin@fmat.com', roles: ['ADMINISTRADOR'], permissions: ['*'] }),
+      );
+
+    const restored = await authApi.restoreSession();
+
+    expect(restored?.accessToken).toBe('restored-token');
+    expect(restored?.user).toEqual(expect.objectContaining({ id: 'u9', userType: 'ADMIN' }));
+    expect((fetchSpy.mock.calls[0][1] as RequestInit).credentials).toBe('include');
+    const meHeaders = new Headers((fetchSpy.mock.calls[1][1] as RequestInit).headers);
+    expect(meHeaders.get('Authorization')).toBe('Bearer restored-token');
+    // restoreSession no guarda la sesión por sí misma: lo decide la app.
+    expect(authStorage.getSession()).toBeNull();
+  });
+
+  it.each([
+    ['sin cookie (401 en refresh)', () => [json({}, 401)]],
+    ['refresh sin token', () => [json({})]],
+    ['/auth/me falla', () => [json({ accessToken: 't' }), json({}, 500)]],
+  ] as Array<[string, () => Response[]]>)('devuelve null: %s', async (_name, responses) => {
+    const spy = vi.spyOn(globalThis, 'fetch');
+    for (const r of responses()) spy.mockResolvedValueOnce(r);
+    await expect(authApi.restoreSession()).resolves.toBeNull();
+  });
+
+  it('devuelve null si no hay red', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('sin red'));
+    await expect(authApi.restoreSession()).resolves.toBeNull();
+  });
+});
+
+describe('authApi.restoreSession: una sola restauración a la vez', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    authStorage.clearSession();
+  });
+
+  it('dos llamadas simultáneas comparten un único refresh', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(json({ accessToken: 'once' }))
+      .mockResolvedValueOnce(json({ id: 'u1', userType: 'ADMIN', roles: ['ADMINISTRADOR'], permissions: ['*'] }));
+
+    const [a, b] = await Promise.all([authApi.restoreSession(), authApi.restoreSession()]);
+
+    expect(a).toBe(b);
+    expect(a?.accessToken).toBe('once');
+    const refreshCalls = fetchSpy.mock.calls.filter(([url]) => String(url).endsWith('/auth/refresh'));
+    expect(refreshCalls).toHaveLength(1);
+  });
+});

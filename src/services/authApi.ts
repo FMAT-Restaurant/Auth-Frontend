@@ -162,6 +162,7 @@ function rolesToPermissions(roles: string[]): string[] {
 
 // Control de concurrencia para evitar llamadas duplicadas de refresh token
 let refreshPromise: Promise<string> | null = null;
+let restoreInFlight: Promise<AuthSession | null> | null = null;
 
 async function authenticatedFetch(
   endpoint: string,
@@ -374,6 +375,33 @@ export const authApi = {
       accessToken: data.accessToken,
       user,
     };
+  },
+
+  /**
+   * Recupera la sesión al cargar la página (#6). El access token solo vive en
+   * memoria, así que tras recargar se obtiene uno nuevo con la cookie HttpOnly
+   * del refresh token y luego el usuario con /auth/me. Si no hay cookie válida,
+   * devuelve null (el usuario verá el login).
+   */
+  restoreSession(): Promise<AuthSession | null> {
+    // Una sola restauración a la vez: el refresh token rota en cada uso, así que
+    // dos llamadas simultáneas con la misma cookie harían que la segunda fallara
+    // (p. ej., el doble montaje de React StrictMode en desarrollo).
+    if (!restoreInFlight) {
+      restoreInFlight = (async () => {
+        try {
+          const { accessToken } = await authApi.refreshSession();
+          if (!accessToken) return null;
+          const user = await authApi.getMe(accessToken);
+          return { accessToken, user };
+        } catch {
+          return null;
+        }
+      })().finally(() => {
+        restoreInFlight = null;
+      });
+    }
+    return restoreInFlight;
   },
 
   async refreshSession(refreshToken?: string): Promise<{ accessToken: string; refreshToken?: string }> {

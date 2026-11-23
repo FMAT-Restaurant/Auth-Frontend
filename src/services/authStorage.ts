@@ -1,6 +1,7 @@
 import type { AuthSession, User } from '../types/auth';
 
-const STORAGE_KEY = 'fmat_restaurant_auth_session';
+/** Clave donde versiones anteriores guardaban la sesión; se borra al arrancar (#6). */
+export const LEGACY_STORAGE_KEY = 'fmat_restaurant_auth_session';
 const MAX_TOKEN_LENGTH = 8192;
 const MAX_TEXT_LENGTH = 300;
 const MAX_LIST_LENGTH = 500;
@@ -9,6 +10,33 @@ type SessionListener = (session: AuthSession | null) => void;
 const listeners = new Set<SessionListener>();
 const expiredListeners = new Set<() => void>();
 let lastSavedJson: string | null = null;
+
+/**
+ * La sesión (access token + usuario) vive SOLO en memoria (#6): un XSS ya no
+ * puede leerla de localStorage. Al recargar, la app la recupera con la cookie
+ * HttpOnly del refresh token (authApi.restoreSession).
+ */
+let memorySession: AuthSession | null = null;
+
+function purgeLegacyStorage(): void {
+  try {
+    globalThis.localStorage?.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // Sin acceso a localStorage (modo privado, etc.): no hay nada que borrar.
+  }
+}
+
+purgeLegacyStorage();
+
+function notify(session: AuthSession | null): void {
+  listeners.forEach((listener) => {
+    try {
+      listener(session);
+    } catch (e) {
+      console.error('Error al notificar listener de sesión:', e);
+    }
+  });
+}
 
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
@@ -32,7 +60,7 @@ function cleanBoolean(value: unknown): boolean | undefined {
 
 /**
  * Reconstruye la sesión solo con los campos conocidos y del tipo esperado, tanto
- * al guardar como al leer de localStorage: así no se persiste (ni se confía en)
+ * al guardarla y al recibirla de otra pestaña: así no se conserva (ni se confía en)
  * contenido arbitrario. El refresh token nunca se guarda: vive en una cookie
  * HttpOnly. Devuelve null si la sesión no es válida.
  */
@@ -78,86 +106,41 @@ export function sanitizeSession(session: unknown): AuthSession | null {
 
 export const authStorage = {
   saveSession: (session: AuthSession): void => {
-    try {
-      const safeSession = sanitizeSession(session);
-      if (!safeSession) {
-        console.error('Sesión inválida: no se guarda en localStorage');
-        return;
-      }
-      const json = JSON.stringify(safeSession);
-      if (json === lastSavedJson) return;
-      lastSavedJson = json;
-      localStorage.setItem(STORAGE_KEY, json);
-      listeners.forEach((listener) => {
-        try {
-          listener(safeSession);
-        } catch (e) {
-          console.error('Error al notificar listener de sesión:', e);
-        }
-      });
-    } catch (err) {
-      console.error('Error al guardar sesión en localStorage:', err);
+    const safeSession = sanitizeSession(session);
+    if (!safeSession) {
+      console.error('Sesión inválida: no se guarda');
+      return;
     }
+    const json = JSON.stringify(safeSession);
+    if (json === lastSavedJson) return;
+    lastSavedJson = json;
+    memorySession = safeSession;
+    notify(safeSession);
   },
 
-  getSession: (): AuthSession | null => {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (!data) return null;
-      const sanitized = sanitizeSession(JSON.parse(data));
-      if (!sanitized) {
-        // Contenido inválido o manipulado: se descarta.
-        lastSavedJson = null;
-        localStorage.removeItem(STORAGE_KEY);
-        return null;
-      }
-      const cleanJson = JSON.stringify(sanitized);
-      if (cleanJson !== data) {
-        // Quita refreshToken de sesiones antiguas y cualquier campo desconocido.
-        localStorage.setItem(STORAGE_KEY, cleanJson);
-      }
-      lastSavedJson = cleanJson;
-      return sanitized;
-    } catch (err) {
-      console.error('Error al leer sesión de localStorage:', err);
-      return null;
-    }
-  },
+  getSession: (): AuthSession | null => memorySession,
 
   clearSession: (): void => {
-    try {
-      if (lastSavedJson === null && !localStorage.getItem(STORAGE_KEY)) return;
-      lastSavedJson = null;
-      localStorage.removeItem(STORAGE_KEY);
-      listeners.forEach((listener) => {
-        try {
-          listener(null);
-        } catch (e) {
-          console.error('Error al notificar listener de cierre de sesión:', e);
-        }
-      });
-    } catch (err) {
-      console.error('Error al eliminar sesión de localStorage:', err);
-    }
+    purgeLegacyStorage();
+    if (memorySession === null && lastSavedJson === null) return;
+    memorySession = null;
+    lastSavedJson = null;
+    notify(null);
   },
 
   /**
    * Marca la sesión como expirada (BUG-SEC-001).
-   * Borra de inmediato los tokens guardados (ya no sirven), pero NO desmonta la
-   * vista: avisa a quien esté escuchando para que muestre "Tu sesión ha expirado"
-   * antes de regresar al login. Si nadie escucha, se comporta como clearSession().
+   * Borra de inmediato el token (ya no sirve), pero NO desmonta la vista: avisa
+   * a quien esté escuchando para que muestre "Tu sesión ha expirado" antes de
+   * regresar al login. Si nadie escucha, se comporta como clearSession().
    */
   expireSession: (): void => {
     if (expiredListeners.size === 0) {
       authStorage.clearSession();
       return;
     }
-    try {
-      lastSavedJson = null;
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (err) {
-      console.error('Error al eliminar sesión expirada de localStorage:', err);
-    }
+    memorySession = null;
+    lastSavedJson = null;
     expiredListeners.forEach((listener) => {
       try {
         listener();
