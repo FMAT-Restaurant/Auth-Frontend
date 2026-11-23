@@ -14,7 +14,6 @@ const mockCollaborator: User = {
   roles: ['MESERO', 'HOST'],
   permissions: ['orders:view'],
   isActive: true,
-  temporaryPassword: 'TMP-999',
   mustChangePassword: true,
 };
 
@@ -49,7 +48,7 @@ describe('StaffDetailDrawer', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders collaborator details, copies staffId and temporary password, and saves changes', async () => {
+  it('renders collaborator details without a stored temporary password, copies staffId and saves changes', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     const onClose = vi.fn();
 
@@ -66,13 +65,11 @@ describe('StaffDetailDrawer', () => {
     );
 
     expect(screen.getByText('M000101')).toBeInTheDocument();
-    expect(screen.getByText('TMP-999')).toBeInTheDocument();
+    // El backend ya no devuelve la contraseña temporal en el detalle (#14).
+    expect(screen.queryByText('Copiar clave')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTitle('Copiar Staff ID'));
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('M000101');
-
-    fireEvent.click(screen.getByText('Copiar clave'));
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('TMP-999');
 
     fireEvent.click(screen.getByText('● Activo'));
     expect(screen.getByText('○ Inactivo')).toBeInTheDocument();
@@ -142,7 +139,7 @@ describe('StaffDetailDrawer', () => {
     render(
       <StaffDetailDrawer
         isOpen={true}
-        collaborator={{ ...mockCollaborator, temporaryPassword: null, passwordResetRequested: true }}
+        collaborator={{ ...mockCollaborator, passwordResetRequested: true }}
         availableRoles={mockRoles}
         onClose={onClose}
         onSave={vi.fn()}
@@ -161,6 +158,10 @@ describe('StaffDetailDrawer', () => {
       expect(onResetPassword).toHaveBeenCalledWith('c1');
       expect(screen.getByText('NEW-777')).toBeInTheDocument();
     });
+
+    // Tras restablecer, la clave nueva se muestra una vez y se puede copiar.
+    fireEvent.click(screen.getByText('Copiar clave'));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('NEW-777');
 
     fireEvent.click(screen.getByText('Dar de baja'));
     expect(screen.getByText('¿Dar de baja a este colaborador?')).toBeInTheDocument();

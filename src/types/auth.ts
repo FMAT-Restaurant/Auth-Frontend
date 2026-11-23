@@ -13,7 +13,8 @@ export interface User {
   mustChangePassword?: boolean;
   isActive?: boolean;
   passwordStatus?: 'TEMPORARY' | 'ACTIVE';
-  temporaryPassword?: string | null;
+  // La contraseña temporal no forma parte del usuario: el backend solo la devuelve
+  // una vez, en la respuesta de crear o restablecer (Auth-Backend #14).
   passwordResetRequested?: boolean;
 }
 
