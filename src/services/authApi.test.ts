@@ -329,4 +329,23 @@ describe('authApi', () => {
     await expect(authApi.createRole({ name: 'R', permissions: [] }, 'tok')).rejects.toThrow('Fallo de servidor');
     await expect(authApi.deleteRole('R', 'tok')).rejects.toThrow('Fallo de servidor');
   });
+
+  // AUTH-F06 (#17): el backend manda `allowedViews`; el front debe leer ese campo.
+  it('mapea allowedViews del backend a user.views en getMe', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'usr-1',
+          staffId: 'M000002',
+          roles: ['MESERO'],
+          permissions: ['orders:orders:view'],
+          passwordStatus: 'ACTIVE',
+          allowedViews: ['orders-pos-view', 'sala-view'],
+        }),
+        { status: 200 },
+      ),
+    );
+    const user = await authApi.getMe('tok');
+    expect(user.views).toEqual(['orders-pos-view', 'sala-view']);
+  });
 });

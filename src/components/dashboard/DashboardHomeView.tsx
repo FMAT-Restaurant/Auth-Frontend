@@ -17,7 +17,9 @@ export const DashboardHomeView: React.FC<DashboardHomeViewProps> = ({ currentUse
   const hasMenu = currentUser.permissions.some((p) => p.startsWith('menu:') || p === '*');
   const hasSala = currentUser.permissions.some((p) => p.startsWith('sala:') || p === '*');
   const hasBilling = currentUser.permissions.some((p) => p.startsWith('billing:') || p === '*');
-  const availableModules = [hasInventory, hasOrders, hasMenu, hasSala, hasBilling].filter(Boolean).length;
+  const availableModules = [hasInventory, hasOrders, hasKitchen, hasMenu, hasSala, hasBilling].filter(
+    Boolean,
+  ).length;
   const today = new Date().toLocaleDateString('es-MX', {
     weekday: 'long',
     day: 'numeric',
