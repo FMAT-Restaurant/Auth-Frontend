@@ -86,10 +86,10 @@ export default defineConfig(({ mode }) => {
                 const code = await upstream.text();
                 const patched = code
                   .replace(
-                    /((?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*["']http:\/\/localhost:808[0-5]["'];\s*(?:let|var)\s+[a-zA-Z_$][\w$]*\s*=\s*)21\b/g,
+                    /((?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*["']http:\/\/localhost:(?:8000|808[0-5])["'];\s*(?:let|var)\s+[a-zA-Z_$][\w$]*\s*=\s*)21\b/g,
                     '$1$2.length',
                   )
-                  .replace(/http:\/\/localhost:808[0-5]/g, effectiveGatewayUrl);
+                  .replace(/http:\/\/localhost:(?:8000|808[0-5])/g, effectiveGatewayUrl);
                 res.end(patched);
               } else {
                 if (contentType) res.setHeader('Content-Type', contentType);
